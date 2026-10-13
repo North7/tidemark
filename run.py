@@ -266,7 +266,8 @@ def main():
                              "reason": "; ".join(status.get(src, {}).get("errors", [])) or "免費來源無法取得"}
                 continue
             as_of = s.index.max()
-            stale = (today - as_of).days > STALE_DAYS or (src and status[src]["stale"])
+            # 與資料源同一套標準：ETF 只算美股交易日（週末與假日沒有資料不算過期）
+            stale = is_lagging(src, as_of, today) or (src and status[src]["stale"])
             inds[key] = {
                 "label": label, "unit": unit, "role": role, "description": desc,
                 "value": r(filled_ind[key].iloc[-1]),
