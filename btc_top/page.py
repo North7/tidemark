@@ -472,12 +472,16 @@ The weekly Supertrend (ATR 10 × 3, from Bitstamp daily candles, completed weeks
 REF_STATUS = {"unverified": "⟪無法驗證|Not verifiable⟫", "rejected": "⟪已實測・未採用|Tested · not adopted⟫", "watch": "⟪僅供觀察|Watch only⟫"}
 REF_ACCESS = {"free": "⟪免費可看|Free to view⟫", "partial": "⟪部分免費|Partly free⟫", "paid": "⟪需付費|Paid⟫"}
 REFS = [
-    ("⟪持有者行為|Holder behavior⟫", "⟪長期／短期持有者的成本與盈虧。免費資料最多只有近 4 年，無法跨週期驗證。|Cost basis and profit/loss of long- and short-term holders. Free data covers about 4 years at most, too short to test across cycles.⟫", [
+    ("⟪持有者行為|Holder behavior⟫", "⟪長期／短期持有者的成本與盈虧。沒有免費、可公開使用的完整歷史數據（免費 API 最多只有近 4 年），所以不計分。|Cost basis and profit/loss of long- and short-term holders. There is no free, republishable full history (free APIs cover about 4 years at most), so they aren’t scored.⟫", [
         ("⟪短期持有者成本價・STH-MVRV|STH cost basis · STH-MVRV⟫", "unverified", "free",
          [("CheckOnChain", "https://charts.checkonchain.com/btconchain/unrealised/mvrv_sth/mvrv_sth_light.html"),
           ("BGeometrics", "https://charts.bgeometrics.com/sth_realized_price.html")],
          "⟪短期持有者（持幣 155 天內）的平均買入價。價格在它之上代表近期買家整體獲利，牛市回調常在這附近止跌；跌破代表近期買家整體虧損。STH-MVRV ＝ 價格 ÷ 這條成本線，STH-NUPL ＝ 1 − 1 ÷ STH-MVRV（小於 0 即跌破成本）。|The average purchase price of short-term holders (coins held under 155 days). Above it, recent buyers are in profit and bull-market pullbacks often stall nearby; below it, they are underwater. STH-MVRV = price ÷ this cost basis, and STH-NUPL = 1 − 1 ÷ STH-MVRV (below 0 means below cost).⟫",
          "⟪「牛市中跌破＝好買點」要事後才知道是不是牛市；熊市裡會長期待在成本線下方。|“Below cost in a bull market = a good entry” only works if you already know it is a bull market; in bear markets price stays below this line for months.⟫"),
+        ("⟪短期持有者成本 vs 市場真實平均成本（交叉）|STH cost basis vs True Market Mean (cross)⟫", "rejected", "free",
+         [("CheckOnChain", "https://charts.checkonchain.com/btconchain/pricing/pricing_costbasisoriginals/pricing_costbasisoriginals_light.html")],
+         "⟪真實平均成本（TMMP）只計算仍在流動的幣的平均成本。短期持有者成本由下往上穿越它，常被解讀為「牛市確立」：近期買家願意用高於市場平均的價格進場；跌破則被解讀為熊市確立。|The True Market Mean (TMMP) is the average cost of coins still in active circulation. When the short-term holder cost basis crosses above it, this is often read as “bull market confirmed”: recent buyers are paying above the market average; a cross below is read as a confirmed bear market.⟫",
+         "⟪本站 2026-10 用 CheckOnChain 的歷史數據實測：過去三次上穿都在週期底部後 190–490 天、價格已比底部高 135–239%，都晚於週線 Supertrend 轉多；比值與 MVRV Z-score 相關 0.85；2016-05、2020-04 曾來回穿越；事件只有 5 次。屬於確認型訊號，不適合抓買點。|We tested it in October 2026 with CheckOnChain’s history: the last three crosses above came 190–490 days after the cycle bottom, with price already 135–239% above it — always later than the weekly Supertrend turning up; the ratio correlates 0.85 with MVRV Z-score; it whipsawed in May 2016 and April 2020; there are only 5 events. A confirmation signal, not an entry signal.⟫"),
         ("⟪依持有者分組的 NUPL|NUPL by cohort⟫", "unverified", "free",
          [("CheckOnChain", "https://charts.checkonchain.com/btconchain/unrealised/nupl_bycohort/nupl_bycohort_light.html")],
          "⟪把本站冷度用的 NUPL（全市場未實現盈虧）拆成長期與短期持有者。長期持有者的帳面獲利在週期頂部附近最大，在熊市底部縮到最小。|Splits the market-wide NUPL used in our coldness score into long- and short-term holders. Long-term holders’ paper profit peaks near cycle tops and shrinks to its smallest near bear-market bottoms.⟫",
