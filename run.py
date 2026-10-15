@@ -255,7 +255,7 @@ def main():
     btim, binfo = compute_bottom_timing(ind.index, ind["price"], tops, bottoms)
     bsig = bottom_signal(cold, btim["timing"])
     mid, mid_info = compute_midterm(ind, raw.get("ohlc", pd.DataFrame()), today)
-    live = pd.DataFrame({"sig": signal, "tim": tim["timing"], "bsig": bsig})
+    live = pd.DataFrame({"sig": signal, "tim": tim["timing"], "bsig": bsig, "dsl": tim["days_since_low"]})
     strat, strat_info = compute_strategy(ind, live, mid["st_dir"] if "st_dir" in mid else pd.Series(dtype=float), today, DATA / "strategy_ledger.csv")
 
     # ---- 歷史時間序列 ----

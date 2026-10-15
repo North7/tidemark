@@ -1,12 +1,12 @@
 {
   "date": "2026-10-15",
-  "generated_at": "2026-10-15T02:26:06Z",
+  "generated_at": "2026-10-15T02:46:57Z",
   "price_usd": 81498.52,
   "price_date": "2026-10-14",
   "top_signal": 0.0,
   "signal_level": "none",
-  "heat_score": 36.8,
-  "composite_score": 36.8,
+  "heat_score": 36.9,
+  "composite_score": 36.9,
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "cold",
@@ -723,6 +723,162 @@
         }
       ]
     },
+    "early": {
+      "rules": {
+        "low_days": 650,
+        "new_high_within_days": 180
+      },
+      "defined": "2026-10-15",
+      "position": 1.0,
+      "armed": false,
+      "early_arm_now": false,
+      "days_since_low": 106,
+      "active_from": "2028-04-10",
+      "early_arm_dates": [
+        "2020-11-30",
+        "2024-08-20"
+      ],
+      "same_as_main": true,
+      "backtest": {
+        "start": "2014",
+        "strategy": 814.16,
+        "hold": 108.32,
+        "ratio": 7.52,
+        "cagr": 0.6893,
+        "cagr_hold": 0.4427,
+        "max_dd": -0.7432,
+        "max_dd_hold": -0.8378,
+        "time_in": 0.7246
+      },
+      "by_start": [
+        {
+          "start": "2014",
+          "strategy": 814.16,
+          "hold": 108.32,
+          "ratio": 7.52,
+          "cagr": 0.6893,
+          "cagr_hold": 0.4427,
+          "max_dd": -0.7432,
+          "max_dd_hold": -0.8378,
+          "time_in": 0.7246
+        },
+        {
+          "start": "2016",
+          "strategy": 610.87,
+          "hold": 187.49,
+          "ratio": 3.26,
+          "cagr": 0.8127,
+          "cagr_hold": 0.6247,
+          "max_dd": -0.7432,
+          "max_dd_hold": -0.8378,
+          "time_in": 0.7997
+        },
+        {
+          "start": "2018",
+          "strategy": 12.45,
+          "hold": 6.05,
+          "ratio": 2.06,
+          "cagr": 0.3326,
+          "cagr_hold": 0.2275,
+          "max_dd": -0.8138,
+          "max_dd_hold": -0.8138,
+          "time_in": 0.8439
+        },
+        {
+          "start": "2020",
+          "strategy": 23.39,
+          "hold": 11.37,
+          "ratio": 2.06,
+          "cagr": 0.5914,
+          "cagr_hold": 0.4308,
+          "max_dd": -0.6566,
+          "max_dd_hold": -0.7667,
+          "time_in": 0.7979
+        },
+        {
+          "start": "2022",
+          "strategy": 2.55,
+          "hold": 1.71,
+          "ratio": 1.49,
+          "cagr": 0.2162,
+          "cagr_hold": 0.1192,
+          "max_dd": -0.6687,
+          "max_dd_hold": -0.6687,
+          "time_in": 0.8833
+        }
+      ],
+      "trades": [
+        {
+          "date": "2014-03-03",
+          "action": "sell",
+          "why": "st_down",
+          "price": 676.51
+        },
+        {
+          "date": "2015-07-13",
+          "action": "buy",
+          "why": "st_up",
+          "price": 292.65
+        },
+        {
+          "date": "2018-02-05",
+          "action": "sell",
+          "why": "st_down",
+          "price": 6849.54
+        },
+        {
+          "date": "2018-11-20",
+          "action": "buy",
+          "why": "bsig",
+          "price": 4317.53
+        },
+        {
+          "date": "2021-05-24",
+          "action": "sell",
+          "why": "st_down",
+          "price": 38630.41
+        },
+        {
+          "date": "2021-10-11",
+          "action": "buy",
+          "why": "st_up",
+          "price": 57289.19
+        },
+        {
+          "date": "2022-01-10",
+          "action": "sell",
+          "why": "st_down",
+          "price": 41816.95
+        },
+        {
+          "date": "2022-06-16",
+          "action": "buy",
+          "why": "bsig",
+          "price": 20310.18
+        },
+        {
+          "date": "2025-11-17",
+          "action": "sell",
+          "why": "st_down",
+          "price": 91911.47
+        },
+        {
+          "date": "2026-06-09",
+          "action": "buy",
+          "why": "bsig",
+          "price": 61640.46
+        }
+      ],
+      "live": {
+        "final_date": "2026-10-15",
+        "days": 0,
+        "trades": [],
+        "strategy": 1.0,
+        "hold": 1.0,
+        "max_dd": 0.0,
+        "max_dd_hold": 0.0
+      }
+    },
     "projected_arm": "2029-02-01"
   },
   "categories": {
@@ -881,7 +1037,7 @@
           "unit": "%",
           "role": "score",
           "description": "穩定幣總供給 90 日成長率，代表場內可用的新資金。",
-          "value": 1.5226,
+          "value": 1.5204,
           "score": 10.5,
           "percentile": 41.8,
           "as_of": "2026-10-15",
@@ -895,7 +1051,7 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.119,
+          "value": -0.1189,
           "score": 0.0,
           "percentile": 4.5,
           "as_of": "2026-10-15",
@@ -910,7 +1066,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 4.8,
+      "score": 5.5,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -933,9 +1089,9 @@
           "unit": "%",
           "role": "score",
           "description": "全市場 BTC 合約未平倉量占市值比例，代表槓桿規模。",
-          "value": 0.2011,
+          "value": 0.1971,
           "score": 0.0,
-          "percentile": 33.9,
+          "percentile": 29.2,
           "as_of": "2026-10-14",
           "stale": false,
           "status": "ok",
@@ -947,9 +1103,9 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 4.9881,
-          "score": 14.4,
-          "percentile": 44.4,
+          "value": 5.0447,
+          "score": 16.6,
+          "percentile": 45.8,
           "as_of": "2026-10-15",
           "stale": false,
           "status": "ok",

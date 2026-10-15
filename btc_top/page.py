@@ -174,7 +174,7 @@ def _series(hist: pd.DataFrame, ind: pd.DataFrame, defs: dict) -> dict:
     for k, (grp, label, col, unit, desc) in COLD_INDICATORS.items():
         cols["v_" + k] = (hist[col] if col in hist else ind[col].reindex(hist.index))
         cols["s_" + k] = hist["coldscore_" + k]
-    for k, col in (("seq", "strat_eq"), ("sbh", "strat_bh"), ("seqb", "strat_eq_b"), ("seq2018", "strat_eq_2018"), ("seqb2018", "strat_eq_b_2018"),
+    for k, col in (("seq", "strat_eq"), ("sbh", "strat_bh"), ("seqb", "strat_eq_b"), ("seq2018", "strat_eq_2018"), ("seqb2018", "strat_eq_b_2018"), ("seqe", "strat_eq_e"), ("seqe2018", "strat_eq_e_2018"), ("seqe2022", "strat_eq_e_2022"),
                    ("seq2022", "strat_eq_2022"), ("seqb2022", "strat_eq_b_2022"), ("ma50", "mid_ma50"), ("ma200", "mid_ma200"), ("ma20w", "mid_ma20w"), ("stl", "mid_st_line"), ("std", "mid_st_dir")):
         if col in hist:
             cols[k] = hist[col]
@@ -658,6 +658,20 @@ def _strategy(latest: dict) -> str:
              if g.get("since") else "")
     pos_pct = 100 if hold else 0
     bpos = round((g.get("batch") or {}).get("position", pos_pct / 100) * 100)
+    ee = g.get("early") or {}
+    epos = round(ee.get("position", pos_pct / 100) * 100)
+    if ee.get("early_arm_now") or (ee.get("armed") and not g["armed"]):
+        e_txt = (f"⟪<b>防提前見頂版（對照）已進入警戒</b>：距本輪低點 {ee.get('days_since_low')} 天，近 {ee.get('rules', {}).get('new_high_within_days')} 天創過歷史新高；"
+                 f"週線 Supertrend 轉空就賣出（主策略仍依時機）。|<b>Early-top version (comparison) is on alert</b>: {ee.get('days_since_low')} days since the cycle low "
+                 f"and a new all-time high within {ee.get('rules', {}).get('new_high_within_days')} days; it sells when the weekly Supertrend turns down (the main strategy still follows timing).⟫")
+    elif ee:
+        e_txt = (f"⟪<b>防提前見頂版（對照）</b>：距本輪低點滿 {ee['rules']['low_days']} 天（{ee.get('active_from') or '—'}）後，"
+                 f"只要近 {ee['rules']['new_high_within_days']} 天創過歷史新高，就不等時機、直接進入警戒。目前距低點 {ee.get('days_since_low')} 天，尚未生效。|"
+                 f"<b>Early-top version (comparison)</b>: from {ee['rules']['low_days']} days after the cycle low ({ee.get('active_from') or '—'}), "
+                 f"any new all-time high within {ee['rules']['new_high_within_days']} days puts it on alert without waiting for timing. "
+                 f"Now {ee.get('days_since_low')} days since the low — not active yet.⟫")
+    else:
+        e_txt = ""
     if g["armed"]:
         a0 = (g.get("alerts") or [{}])[-1].get("from", "")
         alert_chip = (f'<div class="st-alert on"><i></i>⟪警戒中（自 {a0}）：週線 Supertrend 轉空即全部賣出|On alert (since {a0}): '
@@ -689,7 +703,7 @@ def _strategy(latest: dict) -> str:
         <div class="st-left"><div class="st-big">{state}</div>{alert_chip}</div>
         <div class="st-pos"><span>⟪倉位|Position⟫</span><b>{pos_pct}<small>%</small></b>
           <i class="st-bar"><u style="width:{pos_pct}%"></u></i><em>⟪BTC {pos_pct}%・現金 {100 - pos_pct}%|BTC {pos_pct}% · cash {100 - pos_pct}%⟫</em>
-          <em class="st-pos-b">⟪分批版 {bpos}%|Batch version {bpos}%⟫</em></div>
+          <em class="st-pos-b">⟪分批版 {bpos}%|Batch version {bpos}%⟫</em><em class="st-pos-b">⟪防提前見頂版 {epos}%|Early-top version {epos}%⟫</em></div>
       </div>{last_html}
       <div class="st-grid">
         <div><span>⟪頂部訊號|Top signal⟫</span><b>{now['top_signal']:.0f}<small>/50</small></b></div>
@@ -697,7 +711,7 @@ def _strategy(latest: dict) -> str:
         <div><span>⟪底部訊號|Bottom signal⟫</span><b>{now['bottom_signal']:.0f}<small>/50</small></b></div>
         <div><span>⟪週線 Supertrend|Weekly Supertrend⟫</span><b class="{'up' if now['supertrend'] == 'up' else 'dn'}">{st_txt}</b></div>
       </div>
-      <p class="st-next">{nxt}</p>
+      <p class="st-next">{nxt}</p>{f'<p class="st-next st-early">{e_txt}</p>' if e_txt else ''}
     </div>"""
     rules = """
     <div class="card st-rules">
@@ -707,6 +721,7 @@ def _strategy(latest: dict) -> str:
         <li><b>⟪賣出|Sell⟫</b>⟪警戒中，週線 Supertrend（ATR 10 × 3）由多轉空 → 全部賣出。|On alert, the weekly Supertrend (ATR 10 × 3) turns down → sell everything.⟫</li>
         <li><b>⟪買回|Buy back⟫</b>⟪空手時，底部訊號 ≥ 50 或週線 Supertrend 由空轉多 → 全部買回。|In cash, bottom signal ≥ 50 or the weekly Supertrend turns up → buy everything back.⟫</li>
       </ol>
+      <p class="muted small">⟪<b>對照：防提前見頂版</b>（2026-10-15 加入，不取代主策略）：另外加一個進入警戒的條件——距本輪低點已滿 650 天，且近 180 天內創過歷史新高（不看熱度、不看時鐘）。用來補「頂部比時鐘早一年以上」的盲點。逐輪回測的交易與主策略完全相同；把時鐘調晚一年模擬提前見頂時，主策略會抱過 2014、2022 熊市，這個版本都在頂部後賣出（另多一次 2019-11 誤賣）。|<b>Comparison: early-top version</b> (added 2026-10-15; does not replace the main strategy): one extra alert condition — at least 650 days since the cycle low and a new all-time high within the last 180 days (no heat, no clocks). It covers the blind spot of a top arriving a year or more before the clocks expect. In walk-forward backtests its trades are identical to the main strategy; with the clocks shifted a year late to simulate early tops, the main strategy rides the 2014 and 2022 bears while this version sells after each top (plus one extra mistaken sale in Nov 2019).⟫</p>
       <p class="muted small">⟪頂部訊號與時機會提早亮，所以只用來「進入警戒」；真正賣出要等週線趨勢確認轉空。頂部訊號 = 熱度 × 時機 ÷ 100，不會超過時機，所以警戒條件實際上等於「頂部時機 ≥ 50」，熱度本身不影響交易。門檻固定為 50，未針對歷史最佳化；40／50／60 的 27 種組合都勝過持有，但實際只產生 3 條不同的持倉路徑，不是 27 次獨立驗證。|The top signal and timing light up early, so they only put the strategy on alert; the actual sale waits for the weekly trend to confirm. Top signal = heat × timing ÷ 100 never exceeds timing, so the alert condition is effectively “top timing ≥ 50” and heat itself does not affect trades. Thresholds are fixed at 50, not fitted to history; all 27 combinations of 40/50/60 beat holding, but they produce only 3 distinct position paths — not 27 independent tests.⟫</p>
     </div>"""
     rs = {x["start"]: x["ratio"] for x in g["by_start"]}
@@ -719,20 +734,27 @@ def _strategy(latest: dict) -> str:
              f"An early top in 2028 is a blind spot: the alert effectively depends only on top timing, which the clocks put no earlier than {g.get('projected_arm') or '—'}. "
              "If the top comes in 2028, the strategy won’t go on alert and will ride the whole decline. Historically, “heat ≥ 75, timing < 30, 150–450 days after the halving, ≥ 650 days after the low” "
              "occurred in only 4 stretches: Nov 2013 was the cycle top, but after Jan 2021, Feb–Mar 2021 and Nov–Dec 2024 price rose a further ~99%, ~80% and ~38% "
-             "(Nov 2024 was ~200 days after the halving, right after the election, with heat at 87) — so heat alone can’t flag an early top (tested Oct 2026).⟫</li>")
+             "(Nov 2024 was ~200 days after the halving, right after the election, with heat at 87) — so heat alone can’t flag an early top (tested Oct 2026).⟫</li>"
+             f"<li>⟪因此另外追蹤「防提前見頂版」（見規則），從 {(g.get('early') or {}).get('defined', '—')} 起寫入它自己的不可改寫紀錄（data/strategy_ledger_early.csv）。它在歷史上和主策略沒有差別，"
+             "真正的差異只會在本輪距低點滿 650 天（2028-04）之後、時鐘還沒到時出現；那段期間若牛市中途急跌，它也可能被洗出場。|"
+             f"So an “early-top version” (see rules) is tracked separately from {(g.get('early') or {}).get('defined', '—')} in its own append-only record (data/strategy_ledger_early.csv). "
+             "Historically it never differed from the main strategy; differences can only appear after 650 days from this cycle’s low (Apr 2028) while the clocks have not arrived — "
+             "and a sharp mid-bull drop in that window could shake it out.⟫</li>")
     bt = g["backtest"]
     bstats = (g.get("batch") or {}).get("by_start") or [None] * len(g["by_start"])
+    estats = (g.get("early") or {}).get("by_start") or [None] * len(g["by_start"])
     rows = "".join(
         f"<tr><td>{x['start']}</td><td><b>{_x(x['strategy'])}</b></td><td>{_x(x['hold'])}</td><td><b class='st-ratio'>{x['ratio']:.1f}×</b></td>"
         f"<td class='st-bt'>{'—' if y is None else format(y['ratio'], '.1f') + '×'}</td>"
+        f"<td class='st-bt'>{'—' if z is None else format(z['ratio'], '.1f') + '×'}</td>"
         f"<td class='wd'>{_spct(x['cagr'], False)}</td><td class='wd'>{_spct(x['cagr_hold'], False)}</td><td>{_spct(x['max_dd'], False)}</td><td class='wd'>{_spct(x['max_dd_hold'], False)}</td></tr>"
-        for x, y in zip(g["by_start"], bstats))
+        for x, y, z in zip(g["by_start"], bstats, estats))
     perf = f"""
     <div class="card">
       <div class="card-head"><div><div class="eyebrow">PERFORMANCE</div><h3>⟪各起點績效|Performance by start year⟫</h3></div></div>
-      <div class="scroll"><table class="data fit"><thead><tr><th>⟪起點|Start⟫</th><th>⟪策略|Strategy⟫</th><th>⟪持有|Hold⟫</th><th>⟪策略／持有|Strat / hold⟫</th><th>⟪分批版／持有|Batch / hold⟫</th>
+      <div class="scroll"><table class="data fit"><thead><tr><th>⟪起點|Start⟫</th><th>⟪策略|Strategy⟫</th><th>⟪持有|Hold⟫</th><th>⟪策略／持有|Strat / hold⟫</th><th>⟪分批版／持有|Batch / hold⟫</th><th>⟪防提前見頂版／持有|Early-top / hold⟫</th>
         <th class="wd">⟪策略年化|Strat CAGR⟫</th><th class="wd">⟪持有年化|Hold CAGR⟫</th><th>⟪策略最大回撤|Strat max DD⟫</th><th class="wd">⟪持有最大回撤|Hold max DD⟫</th></tr></thead><tbody>{rows}</tbody></table></div>
-      <p class="muted small" style="margin:8px 0 0">⟪從各年 1 月 1 日起投入 1 單位，至今的資金倍數。每個起點都從「滿倉、未警戒」重新開始（不沿用起點以前的警戒狀態），所以 2018、2022 低於「2014 起連續運作」在同一區間的表現。手續費每次 0.1%，空手時現金不計利息。分批版：進入警戒時先賣 1/3、週線 Supertrend 轉空再賣完，其餘相同（對照用）。|Growth of 1 unit invested on January 1 of each year to today. Each start begins fresh — fully invested and not on alert (no alert state carried over from before the start) — so 2018 and 2022 come out lower than the same stretch of the continuous run from 2014. 0.1% fee per trade; cash earns nothing. Batch version: sells 1/3 on alert and the rest when the weekly Supertrend turns down; otherwise identical (for comparison).⟫</p>
+      <p class="muted small" style="margin:8px 0 0">⟪從各年 1 月 1 日起投入 1 單位，至今的資金倍數。每個起點都從「滿倉、未警戒」重新開始（不沿用起點以前的警戒狀態），所以 2018、2022 低於「2014 起連續運作」在同一區間的表現。手續費每次 0.1%，空手時現金不計利息。分批版：進入警戒時先賣 1/3、週線 Supertrend 轉空再賣完，其餘相同（對照用）。防提前見頂版見規則說明（對照用）。|Growth of 1 unit invested on January 1 of each year to today. Each start begins fresh — fully invested and not on alert (no alert state carried over from before the start) — so 2018 and 2022 come out lower than the same stretch of the continuous run from 2014. 0.1% fee per trade; cash earns nothing. Batch version: sells 1/3 on alert and the rest when the weekly Supertrend turns down; otherwise identical (for comparison). Early-top version: see the rules (for comparison).⟫</p>
     </div>"""
     trs = []
     for t in g["trades"]:
@@ -784,13 +806,14 @@ def _strategy(latest: dict) -> str:
     <div class="legend">
       <span class="static"><i style="background:var(--strat)"></i>⟪策略|Strategy⟫</span>
       <span class="static"><i style="height:0;background:none;border-top:2px dashed var(--strat);opacity:.6"></i>⟪分批版（警戒先賣 1/3）|Batch (sell 1/3 on alert)⟫</span>
+      <span class="static"><i style="height:0;background:none;border-top:2px dotted var(--s-cold)"></i>⟪防提前見頂版|Early-top version⟫</span>
       <span class="static"><i style="background:var(--price)"></i>⟪持續持有|Buy &amp; hold⟫</span>
       <span class="static"><i style="height:10px;background:color-mix(in srgb,var(--topline) 35%,transparent);border-left:2px dashed var(--topline)"></i>⟪警戒期間|Alert period⟫</span>
       <span class="static"><i style="height:0;background:none;border-top:2px dotted var(--fg)"></i>⟪定案日（之後為實際追蹤）|Finalized (live after this)⟫</span>
       <span class="static"><i class="dash" style="border-top-color:var(--s-sig)"></i>⟪賣出|Sell⟫</span>
       <span class="static"><i class="dash" style="border-top-color:var(--s-bot)"></i>⟪買回|Buy⟫</span>
     </div>
-    <p class="muted small" style="margin:8px 0 0">⟪對數刻度，起點 = 1。紫色色帶為警戒期間（進入警戒 → 賣出），淡色虛線為分批版。|Log scale; start = 1. Purple bands mark alert periods (alert → sale); the faint dashed line is the batch version.⟫</p>
+    <p class="muted small" style="margin:8px 0 0">⟪對數刻度，起點 = 1。紫色色帶為警戒期間（進入警戒 → 賣出），淡色虛線為分批版，藍色點線為防提前見頂版（歷史上與策略線完全重疊）。|Log scale; start = 1. Purple bands mark alert periods (alert → sale); the faint dashed line is the batch version and the blue dotted line the early-top version (it overlaps the strategy line throughout history).⟫</p>
   </div>
   {_future(latest)}
   <div class="grid st-bottom">{perf}{trades}</div>
@@ -1201,8 +1224,8 @@ def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
                                         "alerts": latest.get("strategy", {}).get("alerts", []),
                                         "final": (latest.get("strategy", {}).get("live") or {}).get("final_date"),
                                         "base": {y: [float(hist.loc[f"{y}-01-01", c]) for c in
-                                                     (("strat_eq", "strat_bh", "strat_eq_b") if y == "2014" else (f"strat_eq_{y}", "strat_bh", f"strat_eq_b_{y}"))]
-                                                 for y in ("2014", "2018", "2022")} if "strat_eq_2018" in hist else {},
+                                                     (("strat_eq", "strat_bh", "strat_eq_b", "strat_eq_e") if y == "2014" else (f"strat_eq_{y}", "strat_bh", f"strat_eq_b_{y}", f"strat_eq_e_{y}"))]
+                                                 for y in ("2014", "2018", "2022")} if "strat_eq_e_2018" in hist else {},
                                         # 2018／2022：各自從「滿倉、未警戒」重新開始的買賣點與警戒期間
                                         "runs": latest.get("strategy", {}).get("chart_runs", {})}),
         "__MID_EVENTS__": json.dumps({k: [str(d.date()) for d in _mid_events(hist["mid_" + k + "_signal"] > 0)]
@@ -2344,15 +2367,15 @@ function drawMid(){const el=$('#c-mid');if(!el||!D.ma200)return;const s=st.mid,i
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),m=v=>v==null?'—':'$'+Math.round(v).toLocaleString();
   $('#tip-mid').innerHTML=`<b>${D.d[j]}</b><span>${m(D.p[j])}</span><span>Supertrend <b>${D.std[j]==null?'—':(D.std[j]>0?'⟪多|Up⟫ ':'⟪空|Down⟫ ')+m(D.stl[j])}</b></span><span>⟪200 日|200D⟫ <b>${m(D.ma200[j])}</b></span><span>⟪20 週|20W⟫ <b>${m(D.ma20w[j])}</b></span><span>⟪50 日|50D⟫ <b>${m(D.ma50[j])}</b></span>`;}
 function drawStrat(){const el=$('#c-strat');if(!el||!D.seq)return;const s=st.strat;el.setAttribute('height',chartH(300,.55));
-  const R=(STR.runs||{})[s.years],SQ=(R&&D['seq'+s.years])||D.seq,SQB=(R&&D['seqb'+s.years])||D.seqb,TR=R||STR;
-  const i0=Math.max(0,D.d.findIndex(x=>x>=s.years+'-01-01')),bs=(STR.base||{})[s.years]||[SQ[i0],D.sbh[i0],SQB&&SQB[i0]],b1=bs[0],b2=bs[1],b3=bs[2],since=D.d[i0];
-  const a=SQ.map((v,i)=>i<i0||v==null?null:v/b1),b=D.sbh.map((v,i)=>i<i0||v==null?null:v/b2),c=(SQB||[]).map((v,i)=>i<i0||v==null?null:v/b3);
+  const R=(STR.runs||{})[s.years],SQ=(R&&D['seq'+s.years])||D.seq,SQB=(R&&D['seqb'+s.years])||D.seqb,SQE=(R&&D['seqe'+s.years])||D.seqe,TR=R||STR;
+  const i0=Math.max(0,D.d.findIndex(x=>x>=s.years+'-01-01')),bs=(STR.base||{})[s.years]||[SQ[i0],D.sbh[i0],SQB&&SQB[i0],SQE&&SQE[i0]],b1=bs[0],b2=bs[1],b3=bs[2],b4=bs[3],since=D.d[i0];
+  const a=SQ.map((v,i)=>i<i0||v==null?null:v/b1),b=D.sbh.map((v,i)=>i<i0||v==null?null:v/b2),c=(SQB||[]).map((v,i)=>i<i0||v==null?null:v/b3),e=(SQE||[]).map((v,i)=>i<i0||v==null||!b4?null:v/b4);
   const al=(TR.alerts||[]).filter(x=>!x.to||x.to>=since);
-  chart(el,i0,[{a:b,c:'--price',w:1.6},{a:c,c:'--strat',w:1.5,dash:'5 5',op:.55},{a:a,c:'--strat',w:2.6,glow:true}],{log:true,axis:true,hover:s.hover,
+  chart(el,i0,[{a:b,c:'--price',w:1.6},{a:c,c:'--strat',w:1.5,dash:'5 5',op:.55},{a:a,c:'--strat',w:2.6,glow:true},{a:e,c:'--s-cold',w:1.6,dash:'1 4',op:.95}],{log:true,axis:true,hover:s.hover,
     bands:al.map(x=>({from:x.from<since?since:x.from,to:x.to,c:'--topline',op:.14})),
     marks:[{d:STR.final?[STR.final]:[],c:'--fg',dash:'1 3',op:.7},{d:al.map(x=>x.from).filter(x=>x>=since),c:'--topline',dash:'5 3',op:.9},{d:TR.sell.filter(x=>x>=since),c:'--s-sig',dash:'2 4',op:.85},{d:TR.buy.filter(x=>x>=since),c:'--s-bot',dash:'2 4',op:.85}]});
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),f=v=>v==null?'—':(v>=100?Math.round(v).toLocaleString():v.toFixed(2))+'×';
-  $('#tip-strat').innerHTML=`<b>${D.d[j]}</b><span>⟪策略|Strategy⟫ <b>${f(a[j])}</b></span><span>⟪分批版|Batch⟫ <b>${f(c[j])}</b></span><span>⟪持有|Hold⟫ <b>${f(b[j])}</b></span>${al.some(x=>D.d[j]>=x.from&&(!x.to||D.d[j]<=x.to))?'<span class="tip-al">⟪警戒中|On alert⟫</span>':''}<span>${D.p[j]==null?'':'$'+Math.round(D.p[j]).toLocaleString()}</span>`;}
+  $('#tip-strat').innerHTML=`<b>${D.d[j]}</b><span>⟪策略|Strategy⟫ <b>${f(a[j])}</b></span><span>⟪分批版|Batch⟫ <b>${f(c[j])}</b></span><span>⟪防提前見頂|Early-top⟫ <b>${f(e[j])}</b></span><span>⟪持有|Hold⟫ <b>${f(b[j])}</b></span>${al.some(x=>D.d[j]>=x.from&&(!x.to||D.d[j]<=x.to))?'<span class="tip-al">⟪警戒中|On alert⟫</span>':''}<span>${D.p[j]==null?'':'$'+Math.round(D.p[j]).toLocaleString()}</span>`;}
 /* 未來情境圖：2022 起的實際價格＋三條情境路徑（對數刻度、依日期） */
 function drawFut(){const el=$('#c-fut');if(!el||!SCN.dates)return;const W=el.clientWidth;if(!W)return;const H=chartH(300,.5);el.setAttribute('height',H);
   const L=48,R=innerWidth>=900?96:62,T=14,B=24,DAY=864e5,hs=D.d.findIndex(x=>x>='2022-01-01');

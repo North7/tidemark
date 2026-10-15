@@ -38,6 +38,12 @@ def detect(old: dict | None, new: dict) -> list[dict]:
                            "text": f"週期策略：{act}（{WHY_ZH.get(t.get('why'), t.get('why'))}，價格 ${t.get('price', 0):,.0f}）"})
             elif not so.get("armed") and sn.get("armed"):
                 ev.append({"type": "strategy_arm", "text": "週期策略：進入警戒（頂部訊號或頂部時機 ≥ 50），之後週線 Supertrend 轉空就賣出"})
+        eo, en = _get(old, "strategy", "early"), _get(new, "strategy", "early")
+        if eo and en:
+            if eo.get("position") != en.get("position"):
+                ev.append({"type": "early_trade", "text": f"防提前見頂版（對照）：{'全部賣出' if not en.get('position') else '全部買回'}"})
+            elif not eo.get("armed") and en.get("armed") and not sn.get("armed"):
+                ev.append({"type": "early_arm", "text": "防提前見頂版（對照）進入警戒：距本輪低點已滿 650 天且近期創歷史新高；主策略仍未警戒"})
         do, dn = _get(old, "midterm", "supertrend_weekly", "direction"), _get(new, "midterm", "supertrend_weekly", "direction")
         if do and dn and do != dn:
             line = _get(new, "midterm", "supertrend_weekly", "line")

@@ -14,6 +14,8 @@
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -22,6 +24,10 @@ from btc_top import scoring as S
 ARM_SIG, ARM_TIM, BUY_BSIG = 50, 50, 50
 FINAL_DATE = "2026-10-06"  # 策略定案日：之前是回測，之後是實際追蹤（規則不可再為績效調整）
 BATCH_KEEP = 2 / 3  # 分批版（對照用）：進入警戒時先賣 1/3，週線 Supertrend 轉空再賣完
+# 防提前見頂版（對照用，2026-10-15 加入）：距本輪低點 ≥ EARLY_LOW_DAYS 天、且近 EARLY_HIGH_DAYS 天內創過歷史新高，也算進入警戒。
+# 補「時鐘偏晚一年以上」的盲點（例如 2028 年提前見頂）；逐輪回測與主策略交易完全相同，600/650/700 × 90/180/365 天九組結果相同。
+EARLY_LOW_DAYS, EARLY_HIGH_DAYS = 650, 180
+EARLY_DATE = "2026-10-15"  # 防提前見頂版定義日：之後才寫入它自己的決策紀錄
 FEE = 0.001
 START = "2014-01-01"
 CHART_STARTS = ["2018", "2022"]  # 資金曲線圖可切換的其他起點（2014 即主曲線）
@@ -37,7 +43,7 @@ def _signals(ind: pd.DataFrame, months) -> pd.DataFrame:
     tops_h = [t for t in tops if t >= h0]
     bots_h = [b for b in bottoms if b >= h0]
     tim, _ = S.compute_timing(ind.index, ind["price"], tops_h)
-    out = pd.DataFrame({"sig": S.top_signal(heat, tim["timing"]), "tim": tim["timing"]})
+    out = pd.DataFrame({"sig": S.top_signal(heat, tim["timing"]), "tim": tim["timing"], "dsl": tim["days_since_low"]})
     if bots_h:
         _, _, cold, _, _ = S.compute_cold(ind, tops, bottoms)
         btim, _ = S.compute_bottom_timing(ind.index, ind["price"], tops_h, bots_h)
@@ -52,24 +58,27 @@ def walk_forward(ind: pd.DataFrame, live: pd.DataFrame) -> pd.DataFrame:
     tops = [ind["price"][m].idxmax() for m in S.TOP_MONTHS]
     seg = np.searchsorted(np.array(tops, dtype="datetime64[ns]"), ind.index.values, side="left")
     parts = [_signals(ind, m) for m in KNOWN] + [live]
-    out = pd.DataFrame(index=ind.index, columns=["sig", "tim", "bsig"], dtype=float)
+    cols = ["sig", "tim", "bsig", "dsl"]
+    out = pd.DataFrame(index=ind.index, columns=cols, dtype=float)
     for k in range(len(tops) + 1):
         mask = seg == k
         src = parts[max(k - 1, 0)] if k <= len(KNOWN) else live
-        out.loc[mask] = src.loc[mask, ["sig", "tim", "bsig"]].values
+        out.loc[mask] = src.loc[mask].reindex(columns=cols).values
     return out
 
 
-def positions(sig, tim, bsig, st, keep_on_alert: float = 1.0):
-    """逐日狀態機。回傳 (持倉, 交易列表, 每日是否警戒)。keep_on_alert < 1 為分批版：進入警戒時先降到此倉位。"""
+def positions(sig, tim, bsig, st, keep_on_alert: float = 1.0, extra_arm=None):
+    """逐日狀態機。回傳 (持倉, 交易列表, 每日是否警戒)。keep_on_alert < 1 為分批版：進入警戒時先降到此倉位。
+    extra_arm：額外的進入警戒條件（防提前見頂版用）。"""
     pos, armed_s, trades = [], [], []
     s, armed, prev = 1.0, False, np.nan
     for d in sig.index:
         a, tm, b, t = sig.get(d), tim.get(d), bsig.get(d), st.get(d)
+        ex = bool(extra_arm.get(d, False)) if extra_arm is not None else False
         why = None
-        if s > 0 and ((a >= ARM_SIG) or (tm >= ARM_TIM)):
+        if s > 0 and ((a >= ARM_SIG) or (tm >= ARM_TIM) or ex):
             if not armed:
-                trades.append({"date": d, "action": "arm", "why": "sig" if a >= ARM_SIG else "tim"})
+                trades.append({"date": d, "action": "arm", "why": "sig" if a >= ARM_SIG else "tim" if tm >= ARM_TIM else "early"})
                 s = min(s, keep_on_alert)
             armed = True
         if s > 0 and armed and t < 0 and prev > 0:
@@ -84,10 +93,17 @@ def positions(sig, tim, bsig, st, keep_on_alert: float = 1.0):
     return pd.Series(pos, index=sig.index), trades, pd.Series(armed_s, index=sig.index)
 
 
-def fresh(wf: pd.DataFrame, st: pd.Series, start: str, keep_on_alert: float = 1.0) -> pd.Series:
+def fresh(wf: pd.DataFrame, st: pd.Series, start: str, keep_on_alert: float = 1.0, extra_arm=None) -> pd.Series:
     """從 start 當天以「滿倉、未警戒」重新開始跑狀態機。"""
     f = wf.loc[start:]
-    return positions(f["sig"], f["tim"], f["bsig"], st.reindex(f.index), keep_on_alert)[0]
+    return positions(f["sig"], f["tim"], f["bsig"], st.reindex(f.index), keep_on_alert, extra_arm)[0]
+
+
+def early_arm(price: pd.Series, dsl: pd.Series) -> pd.Series:
+    """防提前見頂版的額外警戒：距本輪低點 ≥ EARLY_LOW_DAYS 天，且近 EARLY_HIGH_DAYS 天內收盤創過歷史新高（只用當時已知的價格）。"""
+    new_high = (price >= price.cummax().shift(1)).astype(float)
+    recent = new_high.rolling(EARLY_HIGH_DAYS, min_periods=1).max() > 0
+    return (dsl.reindex(price.index) >= EARLY_LOW_DAYS) & recent
 
 
 def backtest(price: pd.Series, pos: pd.Series, start: str):
@@ -124,6 +140,10 @@ def compute_strategy(ind: pd.DataFrame, live: pd.DataFrame, st: pd.Series, today
     pos, trades, armed = positions(wf["sig"], wf["tim"], wf["bsig"], st)
     m, eq, bh = backtest(price, pos, START)
     stats = [backtest(price, fresh(wf, st, s), s)[0] for s in STARTS]
+    ea = early_arm(price, wf["dsl"])
+    pos_e, trades_e, armed_e = positions(wf["sig"], wf["tim"], wf["bsig"], st, extra_arm=ea)
+    me, eqe, _ = backtest(price, pos_e, START)
+    stats_e = [backtest(price, fresh(wf, st, s, extra_arm=ea), s)[0] for s in STARTS]
     pos_b, _, _ = positions(wf["sig"], wf["tim"], wf["bsig"], st, BATCH_KEEP)
     mb, eqb, _ = backtest(price, pos_b, START)
     stats_b = [backtest(price, fresh(wf, st, s, BATCH_KEEP), s)[0] for s in STARTS]
@@ -135,6 +155,7 @@ def compute_strategy(ind: pd.DataFrame, live: pd.DataFrame, st: pd.Series, today
         p_y, t_y, _ = positions(f["sig"], f["tim"], f["bsig"], st.reindex(f.index))
         extra[f"strat_eq_{y}"] = backtest(price, p_y, f"{y}-01-01")[1]
         extra[f"strat_eq_b_{y}"] = backtest(price, fresh(wf, st, f"{y}-01-01", BATCH_KEEP), f"{y}-01-01")[1]
+        extra[f"strat_eq_e_{y}"] = backtest(price, fresh(wf, st, f"{y}-01-01", extra_arm=ea), f"{y}-01-01")[1]
         runs[y] = {k: [str(t["date"].date()) for t in t_y if t["action"] == k] for k in ("sell", "buy")}
         runs[y]["alerts"] = _alerts(t_y, f"{y}-01-01")
 
@@ -165,25 +186,26 @@ def compute_strategy(ind: pd.DataFrame, live: pd.DataFrame, st: pd.Series, today
         "backtest": m, "by_start": stats, "trades": rows, "alerts": alerts, "chart_runs": runs,
         "live": _live(price, pos, rows, _ledger(ledger_path, wf, st, pos, armed, price)),
         "batch": {"keep_on_alert": _r(BATCH_KEEP), "position": _r(pos_b.iloc[-1]), "backtest": mb, "by_start": stats_b},
+        "early": _early_info(price, wf, pos_e, trades_e, armed_e, ea, me, stats_e, pos,
+                             None if ledger_path is None else Path(ledger_path).with_name("strategy_ledger_early.csv"), st),
     }
-    df = pd.DataFrame({"strat_eq": eq, "strat_bh": bh, "strat_eq_b": eqb, "strat_pos": pos.reindex(eq.index), **extra})
+    df = pd.DataFrame({"strat_eq": eq, "strat_bh": bh, "strat_eq_b": eqb, "strat_eq_e": eqe, "strat_pos": pos.reindex(eq.index), **extra})
     return df, info
 
 
 LEDGER_COLS = ["date", "price", "top_signal", "top_timing", "bottom_signal", "supertrend", "armed", "position", "recorded_at"]
 
 
-def _ledger(path, wf, st, pos, armed, price) -> pd.DataFrame | None:
-    """定案日之後的每日決策：只新增當天以前尚未記錄的日期，既有列一律不改寫。回傳完整紀錄。"""
+def _ledger(path, wf, st, pos, armed, price, since: str = FINAL_DATE) -> pd.DataFrame | None:
+    """定案日（或對照版定義日）之後的每日決策：只新增尚未記錄的日期，既有列一律不改寫。回傳完整紀錄。"""
     if path is None:
         return None
-    from pathlib import Path
     path = Path(path)
     old = pd.read_csv(path, dtype={"date": str}) if path.exists() else pd.DataFrame(columns=LEDGER_COLS)
     done = set(old["date"])
     now = pd.Timestamp.now("UTC").strftime("%Y-%m-%dT%H:%MZ")
     new = []
-    for d in price[FINAL_DATE:].dropna().index:
+    for d in price[since:].dropna().index:
         k = str(d.date())
         if k in done:
             continue
@@ -196,11 +218,11 @@ def _ledger(path, wf, st, pos, armed, price) -> pd.DataFrame | None:
     return old
 
 
-def _live(price: pd.Series, pos: pd.Series, rows: list, ledger: pd.DataFrame | None = None) -> dict:
+def _live(price: pd.Series, pos: pd.Series, rows: list, ledger: pd.DataFrame | None = None, since: str = FINAL_DATE) -> dict:
     """定案日之後的實際追蹤：有決策紀錄時，持倉以紀錄為準（不受之後資料修訂或程式改動影響）。"""
-    p = price[FINAL_DATE:].dropna()
-    out = {"final_date": FINAL_DATE, "days": int(max(0, (price.index[-1] - pd.Timestamp(FINAL_DATE)).days)),
-           "trades": [t for t in rows if t["date"] >= FINAL_DATE]}
+    p = price[since:].dropna()
+    out = {"final_date": since, "days": int(max(0, (price.index[-1] - pd.Timestamp(since)).days)),
+           "trades": [t for t in rows if t["date"] >= since]}
     if ledger is not None and len(ledger):
         lp = pd.Series(ledger["position"].astype(float).values, index=pd.to_datetime(ledger["date"]))
         diff = int((lp != pos.reindex(lp.index)).sum())
@@ -208,11 +230,28 @@ def _live(price: pd.Series, pos: pd.Series, rows: list, ledger: pd.DataFrame | N
         pos = pos.copy()
         pos.loc[lp.index] = lp.values
     if len(p) >= 2:
-        m, _, _ = backtest(price, pos, FINAL_DATE)
+        m, _, _ = backtest(price, pos, since)
         out.update({"strategy": m["strategy"], "hold": m["hold"], "max_dd": m["max_dd"], "max_dd_hold": m["max_dd_hold"]})
     else:
         out.update({"strategy": 1.0, "hold": 1.0, "max_dd": 0.0, "max_dd_hold": 0.0})
     return out
+
+
+def _early_info(price, wf, pos_e, trades_e, armed_e, ea, me, stats_e, pos_main, ledger_path, st) -> dict:
+    """防提前見頂版（對照）：目前狀態、與主策略不同的交易、生效日、定義日後的實際追蹤。"""
+    rows = [{"date": str(t["date"].date()), "action": t["action"], "why": t["why"], "price": _r(price[t["date"]], 2)}
+            for t in trades_e if t["action"] != "arm" and t["date"] >= pd.Timestamp(START)]
+    last = price.index[-1]
+    dsl = wf["dsl"].reindex(price.index)
+    cur_dsl = int(dsl.iloc[-1]) if pd.notna(dsl.iloc[-1]) else None
+    active_from = str((last - pd.Timedelta(days=cur_dsl) + pd.Timedelta(days=EARLY_LOW_DAYS)).date()) if cur_dsl is not None else None
+    early_arms = [str(t["date"].date()) for t in trades_e if t["action"] == "arm" and t["why"] == "early"]
+    led = _ledger(ledger_path, wf, st, pos_e, armed_e, price, since=EARLY_DATE)
+    return {"rules": {"low_days": EARLY_LOW_DAYS, "new_high_within_days": EARLY_HIGH_DAYS}, "defined": EARLY_DATE,
+            "position": _r(pos_e.iloc[-1]), "armed": bool(armed_e.iloc[-1]), "early_arm_now": bool(ea.iloc[-1]),
+            "days_since_low": cur_dsl, "active_from": active_from, "early_arm_dates": early_arms,
+            "same_as_main": bool((pos_e == pos_main).all()), "backtest": me, "by_start": stats_e, "trades": rows,
+            "live": _live(price, pos_e, rows, led, since=EARLY_DATE)}
 
 
 def _r(x, n=4):
