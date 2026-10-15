@@ -806,14 +806,14 @@ def _strategy(latest: dict) -> str:
     <div class="legend">
       <span class="static"><i style="background:var(--strat)"></i>⟪策略|Strategy⟫</span>
       <span class="static"><i style="height:0;background:none;border-top:2px dashed var(--strat);opacity:.6"></i>⟪分批版（警戒先賣 1/3）|Batch (sell 1/3 on alert)⟫</span>
-      <span class="static"><i style="height:0;background:none;border-top:2px dotted var(--s-cold)"></i>⟪防提前見頂版|Early-top version⟫</span>
+      <span class="static"><i style="height:0;background:none;border-top:3px dotted var(--s-cold)"></i>⟪防提前見頂版（藍點，目前與策略線重疊）|Early-top version (blue dots, currently on the strategy line)⟫</span>
       <span class="static"><i style="background:var(--price)"></i>⟪持續持有|Buy &amp; hold⟫</span>
       <span class="static"><i style="height:10px;background:color-mix(in srgb,var(--topline) 35%,transparent);border-left:2px dashed var(--topline)"></i>⟪警戒期間|Alert period⟫</span>
       <span class="static"><i style="height:0;background:none;border-top:2px dotted var(--fg)"></i>⟪定案日（之後為實際追蹤）|Finalized (live after this)⟫</span>
       <span class="static"><i class="dash" style="border-top-color:var(--s-sig)"></i>⟪賣出|Sell⟫</span>
       <span class="static"><i class="dash" style="border-top-color:var(--s-bot)"></i>⟪買回|Buy⟫</span>
     </div>
-    <p class="muted small" style="margin:8px 0 0">⟪對數刻度，起點 = 1。紫色色帶為警戒期間（進入警戒 → 賣出），淡色虛線為分批版，藍色點線為防提前見頂版（歷史上與策略線完全重疊）。|Log scale; start = 1. Purple bands mark alert periods (alert → sale); the faint dashed line is the batch version and the blue dotted line the early-top version (it overlaps the strategy line throughout history).⟫</p>
+    <p class="muted small" style="margin:8px 0 0">⟪對數刻度，起點 = 1。紫色色帶為警戒期間（進入警戒 → 賣出），淡色虛線為分批版，藍色圓點為防提前見頂版：歷史上每筆交易都與策略相同，所以圓點落在策略線上；兩者分歧時才會分開。|Log scale; start = 1. Purple bands mark alert periods (alert → sale); the faint dashed line is the batch version and the blue dots are the early-top version: every historical trade matched the strategy, so the dots sit on the strategy line; they will separate only if the two diverge.⟫</p>
   </div>
   {_future(latest)}
   <div class="grid st-bottom">{perf}{trades}</div>
@@ -2371,7 +2371,7 @@ function drawStrat(){const el=$('#c-strat');if(!el||!D.seq)return;const s=st.str
   const i0=Math.max(0,D.d.findIndex(x=>x>=s.years+'-01-01')),bs=(STR.base||{})[s.years]||[SQ[i0],D.sbh[i0],SQB&&SQB[i0],SQE&&SQE[i0]],b1=bs[0],b2=bs[1],b3=bs[2],b4=bs[3],since=D.d[i0];
   const a=SQ.map((v,i)=>i<i0||v==null?null:v/b1),b=D.sbh.map((v,i)=>i<i0||v==null?null:v/b2),c=(SQB||[]).map((v,i)=>i<i0||v==null?null:v/b3),e=(SQE||[]).map((v,i)=>i<i0||v==null||!b4?null:v/b4);
   const al=(TR.alerts||[]).filter(x=>!x.to||x.to>=since);
-  chart(el,i0,[{a:b,c:'--price',w:1.6},{a:c,c:'--strat',w:1.5,dash:'5 5',op:.55},{a:a,c:'--strat',w:2.6,glow:true},{a:e,c:'--s-cold',w:1.6,dash:'1 4',op:.95}],{log:true,axis:true,hover:s.hover,
+  chart(el,i0,[{a:b,c:'--price',w:1.6},{a:c,c:'--strat',w:1.5,dash:'5 5',op:.55},{a:a,c:'--strat',w:2.6,glow:true},{a:e,c:'--bg',w:5.6,dash:'0.1 22',op:.9},{a:e,c:'--s-cold',w:3.4,dash:'0.1 22',op:1}],{log:true,axis:true,hover:s.hover,
     bands:al.map(x=>({from:x.from<since?since:x.from,to:x.to,c:'--topline',op:.14})),
     marks:[{d:STR.final?[STR.final]:[],c:'--fg',dash:'1 3',op:.7},{d:al.map(x=>x.from).filter(x=>x>=since),c:'--topline',dash:'5 3',op:.9},{d:TR.sell.filter(x=>x>=since),c:'--s-sig',dash:'2 4',op:.85},{d:TR.buy.filter(x=>x>=since),c:'--s-bot',dash:'2 4',op:.85}]});
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),f=v=>v==null?'—':(v>=100?Math.round(v).toLocaleString():v.toFixed(2))+'×';
