@@ -1,12 +1,12 @@
 {
   "date": "2026-10-15",
-  "generated_at": "2026-10-15T03:26:06Z",
+  "generated_at": "2026-10-15T03:33:16Z",
   "price_usd": 81498.52,
   "price_date": "2026-10-14",
   "top_signal": 0.0,
   "signal_level": "none",
-  "heat_score": 36.1,
-  "composite_score": 36.1,
+  "heat_score": 36.0,
+  "composite_score": 36.0,
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "cold",
@@ -1037,7 +1037,7 @@
           "unit": "%",
           "role": "score",
           "description": "穩定幣總供給 90 日成長率，代表場內可用的新資金。",
-          "value": 1.5204,
+          "value": 1.5205,
           "score": 10.5,
           "percentile": 41.8,
           "as_of": "2026-10-15",
@@ -1051,9 +1051,9 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.1157,
+          "value": -0.1132,
           "score": 0.0,
-          "percentile": 4.8,
+          "percentile": 4.9,
           "as_of": "2026-10-15",
           "stale": false,
           "status": "ok",
@@ -1066,7 +1066,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 6.0,
+      "score": 5.9,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -1089,9 +1089,9 @@
           "unit": "%",
           "role": "score",
           "description": "全市場 BTC 合約未平倉量占市值比例，代表槓桿規模。",
-          "value": 0.2009,
+          "value": 0.2013,
           "score": 0.0,
-          "percentile": 33.9,
+          "percentile": 34.4,
           "as_of": "2026-10-14",
           "stale": false,
           "status": "ok",
@@ -1103,9 +1103,9 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 5.08,
-          "score": 18.0,
-          "percentile": 46.7,
+          "value": 5.076,
+          "score": 17.7,
+          "percentile": 46.5,
           "as_of": "2026-10-15",
           "stale": false,
           "status": "ok",
@@ -1268,7 +1268,24 @@
         3.44,
         1.85
       ],
-      "ratio_method_top": 63869.0
+      "ratio_method_top": 63869.0,
+      "bull_pullbacks": [
+        {
+          "from": "2017-06-11",
+          "to": "2017-07-16",
+          "dd": -0.358
+        },
+        {
+          "from": "2019-06-26",
+          "to": "2020-03-12",
+          "dd": -0.614
+        },
+        {
+          "from": "2024-12-17",
+          "to": "2025-04-08",
+          "dd": -0.28
+        }
+      ]
     },
     "dates": [
       "2026-10-14",

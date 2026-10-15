@@ -78,6 +78,13 @@ def compute_scenarios(ind: pd.DataFrame, timing: dict, today: pd.Timestamp) -> d
         return [round(float(np.exp(np.log(now_p) + x * (np.log(top_p) - np.log(now_p)))), 0) for x in w]
 
     sc = {"conservative": cons, "base": mid, "optimistic": opt}
+    # 過去三輪「低點 → 頂部」途中的最大回調（路徑被平滑成只升不降，用來提醒途中也可能先大跌）
+    pulls = []
+    for k in range(1, len(lows)):
+        seg = price[lows[k]:tops[k + 1]]
+        dd = seg / seg.cummax() - 1
+        d = dd.idxmin()
+        pulls.append({"from": str(seg[:d].idxmax().date()), "to": str(d.date()), "dd": round(float(dd.min()), 3)})
     return {
         "as_of": str(now_d.date()), "price": round(now_p, 2), "top_date": str(top_d.date()),
         "window": {"from": min(timing["expected_window_by_low"]["full_from"], timing["expected_window_by_halving"]["full_from"]),
@@ -88,7 +95,8 @@ def compute_scenarios(ind: pd.DataFrame, timing: dict, today: pd.Timestamp) -> d
                    "realized_price": round(float(rp.iloc[-1]), 0), "realized_growth": round(float(g - 1), 4),
                    "powerlaw_slope": round(float(b), 3),
                    "top_over_prior_top": [round(float(price[tops[k + 1]] / price[tops[k]]), 2) for k in range(1, len(tops) - 1)],
-                   "ratio_method_top": round(float(price[tops[-1]] * _next([price[tops[k + 1]] / price[tops[k]] for k in range(1, len(tops) - 1)])), 0)},
+                   "ratio_method_top": round(float(price[tops[-1]] * _next([price[tops[k + 1]] / price[tops[k]] for k in range(1, len(tops) - 1)])), 0),
+                   "bull_pullbacks": pulls},
         "dates": [str(d.date()) for d in dates],
         "paths": {k: path(v) for k, v in sc.items()},
     }

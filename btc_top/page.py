@@ -592,12 +592,14 @@ def _future(latest: dict) -> str:
       <span class="static"><i style="height:0;background:none;border-top:2px dashed var(--strat)"></i>⟪中間|Base⟫</span>
       <span class="static"><i style="height:0;background:none;border-top:2px dashed var(--topline)"></i>⟪樂觀|Optimistic⟫</span>
       <span class="static"><i style="height:10px;background:color-mix(in srgb,var(--a3) 30%,transparent)"></i>⟪預估頂部窗口|Projected top window⟫</span>
+      <span class="static"><i style="height:10px;background:color-mix(in srgb,var(--strat) 18%,transparent);border-top:1px dotted var(--strat);border-bottom:1px dotted var(--strat)"></i>⟪途中回調範圍（中間路徑下方）|Pullback range (below the base path)⟫</span>
       <span class="static"><i style="height:10px;background:color-mix(in srgb,var(--mut) 22%,transparent);border-top:1px dotted var(--mut);border-bottom:1px dotted var(--mut)"></i>⟪提醒範圍（「定案後對照」：凍結的保守路徑 −20% ～ 樂觀路徑 +20%）|Warning range (“Since snapshot”: frozen conservative −20% to optimistic +20%)⟫</span>
     </div>
     <ul class="fut-how">
       <li><b>⟪保守|Conservative⟫</b>⟪頂部 ÷ 前一輪低點的倍數逐輪遞減（{' → '.join(f'{x:g}' for x in i['top_over_prior_low'])}），外推下一輪約 {i['next_top_over_low']} 倍 × 本輪低點 ${i['cycle_low']:,.0f}。|The top-to-prior-low multiple keeps shrinking ({' → '.join(f'{x:g}' for x in i['top_over_prior_low'])}); extrapolated to about {i['next_top_over_low']}× × this cycle's ${i['cycle_low']:,.0f} low.⟫</li>
       <li><b>⟪中間|Base⟫</b>⟪頂部 MVRV（{' → '.join(f'{x:g}' for x in i['top_mvrv'])}）外推約 {i['next_top_mvrv']} × 實現價格（今 ${i['realized_price']:,.0f}，依近 4 年每年 +{i['realized_growth'] * 100:.0f}% 推到頂部日）。|Top MVRV ({' → '.join(f'{x:g}' for x in i['top_mvrv'])}) extrapolated to about {i['next_top_mvrv']} × the realized price (now ${i['realized_price']:,.0f}, grown at the last 4 years' {i['realized_growth'] * 100:.0f}% a year to the top date).⟫</li>
       <li><b>⟪樂觀|Optimistic⟫</b>⟪冪律趨勢價（全部歷史擬合，頂部倍數取 1.0）。若頂部倍數也照 11 → 6.6 → 2.9 → 1.2 的趨勢再下降，結果會接近「中間」。|The power-law trend price (fitted on all history, top multiple 1.0). If the top multiple keeps falling along 11 → 6.6 → 2.9 → 1.2, the result lands near “Base”.⟫</li>
+      <li><b>⟪途中回調|Pullbacks⟫</b>⟪路徑被平滑成只升不降，但過去三輪從低點到頂部的途中，最大回調分別為 {'、'.join(f"{x['dd'] * 100:.0f}%" for x in i.get('bull_pullbacks', []))}（{'、'.join(x['from'][:7] + ' → ' + x['to'][:7] for x in i.get('bull_pullbacks', []))}），而且三輪都沒有跌破起漲的低點。中間路徑下方的淡色帶標出這個範圍：照情境走，途中也可能先跌三到六成。|The paths are smoothed to only rise, but on the way from low to top the last three cycles saw maximum pullbacks of {', '.join(f"{x['dd'] * 100:.0f}%" for x in i.get('bull_pullbacks', []))} ({', '.join(x['from'][:7] + ' → ' + x['to'][:7] for x in i.get('bull_pullbacks', []))}), and none broke below the starting low. The shaded band under the base path marks that range: even on track, price could first fall 30–60%.⟫</li>
       <li><b>⟪未畫出|Not drawn⟫</b>⟪頂部 ÷ 前一頂部（{' → '.join(f'{x:g}' for x in i['top_over_prior_top'])}）外推約 {_k(i['ratio_method_top'])}，低於上一個頂部，等於「下一輪不創新高」；列出供參考。|Top ÷ previous top ({' → '.join(f'{x:g}' for x in i['top_over_prior_top'])}) extrapolates to about {_k(i['ratio_method_top'])} — below the last top, i.e. no new high next cycle; listed for reference.⟫</li>
     </ul>
     <p class="muted small" style="margin:6px 0 0">⟪虛線是定案日（{(c.get('tracking') or {}).get('snapshot_date', '—')}）凍結的路徑，不會每天依最新價格重畫，所以能看出實際走勢偏離多少；右端圓點是每天依最新數據重算的頂部估計，只有本輪低點、實現價格等結構輸入改變時才會移動。路徑形狀取過去三輪「低點 → 頂部」走法的平均（經平滑並強制只升不降，實際走勢會有大回調）；頂部日期取兩個時機時鐘預估中心的中點。各方法只有 3–4 個歷史點，且都假設「漲幅逐輪遞減」會延續，最低與最高相差約 {t['optimistic'] / t['conservative']:.0f} 倍——這個差距本身就是不確定性。每日依最新數據重算；不是預測，也不是目標價。|Dashed lines are the paths frozen on {(c.get('tracking') or {}).get('snapshot_date', '—')}; they are not redrawn from each day's price, so you can see how far actual prices drift. The dots at the right are each day's recomputed top estimates, which move only when structural inputs such as the cycle low or realized price change. Path shape is the average of the last three cycles' low-to-top paths (smoothed and forced to only rise — real prices will have big pullbacks); the top date is the midpoint of the two timing clocks' centers. Each method rests on only 3–4 data points and assumes diminishing returns continue; high and low differ by about {t['optimistic'] / t['conservative']:.0f}× — that gap is the uncertainty. Recomputed daily; not a forecast or a price target.⟫</p>
@@ -1272,7 +1274,7 @@ def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
         "__MIDTERM__": _midterm(latest),
         "__OG_DESC__": f"⟪{latest['date']}　底部訊號 {latest['bottom_signal']:.0f}・頂部訊號 {latest['top_signal']:.0f}・BTC ${latest['price_usd']:,.0f}。每日更新的比特幣週期訊號。|{latest['date']} · bottom signal {latest['bottom_signal']:.0f} · top signal {latest['top_signal']:.0f} · BTC ${latest['price_usd']:,.0f}. Daily bitcoin cycle signals.⟫",
         "__SCN__": json.dumps({**{k: latest["scenarios"][k] for k in ("dates", "paths", "window", "top_date", "as_of")},
-                               "snap": _snap_series(), "tol": ((latest["scenarios"].get("tracking") or {}).get("range") or {}).get("tolerance", .2)}
+                               "snap": _snap_series(), "pull": [x["dd"] for x in latest["scenarios"]["inputs"].get("bull_pullbacks", [])], "tol": ((latest["scenarios"].get("tracking") or {}).get("range") or {}).get("tolerance", .2)}
                               if latest.get("scenarios") else {}),
         "__STRATEGY__": _strategy(latest),
         "__STRAT_TRADES__": json.dumps({**{k: [t["date"] for t in latest.get("strategy", {}).get("trades", []) if t["action"] == k] for k in ("sell", "buy")},
@@ -2473,7 +2475,7 @@ function drawFut(){const el=$('#c-fut');if(!el||!SCN.dates)return;const W=el.cli
   const L=48,R=innerWidth>=900?96:62,T=14,B=24,DAY=864e5,hs=D.d.findIndex(x=>x>='2022-01-01');
   const hist=D.d.slice(hs).map((d,i)=>[Date.parse(d),D.p[hs+i]]).filter(v=>v[1]!=null),fd=P.dates.map(Date.parse);
   const K=[['conservative','--s-cold','⟪保守|Cons.⟫'],['base','--strat','⟪中間|Base⟫'],['optimistic','--topline','⟪樂觀|Opt.⟫']];
-  const t0=hist[0][0],t1=Date.parse(SCN.window.to)+60*DAY,vals=[...hist.map(v=>v[1]),...K.flatMap(k=>P.paths[k[0]]),...K.map(k=>cur[k[0]][cur[k[0]].length-1])];
+  const t0=hist[0][0],t1=Date.parse(SCN.window.to)+60*DAY,vals=[...hist.map(v=>v[1]),...K.flatMap(k=>P.paths[k[0]]),...K.map(k=>cur[k[0]][cur[k[0]].length-1]),...(SCN.pull&&SCN.pull.length?P.paths.base.map(v=>v*(1+Math.min(...SCN.pull))):[])];
   const lo=Math.log10(Math.min(...vals)*.85),hi=Math.log10(Math.max(...vals)*1.12);
   const x=t=>L+(W-L-R)*(t-t0)/(t1-t0),y=v=>T+(H-T-B)*(1-(Math.log10(v)-lo)/(hi-lo)),grid=css('--line'),mut=css('--faint');
   let g='';
@@ -2485,6 +2487,11 @@ function drawFut(){const el=$('#c-fut');if(!el||!SCN.dates)return;const W=el.cli
   if(P!==SCN)g+=`<line x1="${x(snapT)}" x2="${x(snapT)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" stroke-dasharray="1 3" opacity=".25"/>`;
   g+=`<line x1="${x(now)}" x2="${x(now)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" stroke-dasharray="2 4" opacity=".4"/><text x="${x(now)+4}" y="${H-B-6}" font-size="11" fill="${mut}">⟪今天|Today⟫</text>`;
   g+=`<path d="${hist.map((v,i)=>(i?'L':'M')+x(v[0]).toFixed(1)+','+y(v[1]).toFixed(1)).join('')}" fill="none" stroke="${css('--fg')}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  if((SCN.pull||[]).length){const ds=SCN.pull,sh=Math.max(...ds),dp=Math.min(...ds),bp=P.paths.base,ok=fd.map((t,i)=>t>=now);
+    const pts=fd.map((t,i)=>[t,bp[i]]).filter((_,i)=>ok[i]),up=pts.map(v=>v[1]*(1+sh)),dn=pts.map(v=>v[1]*(1+dp));
+    if(pts.length>1){g+=`<path d="${pts.map((v,i)=>(i?'L':'M')+x(v[0]).toFixed(1)+','+y(up[i]).toFixed(1)).join('')}${pts.slice().reverse().map((v,i)=>'L'+x(v[0]).toFixed(1)+','+y(dn[pts.length-1-i]).toFixed(1)).join('')}Z" fill="${css('--strat')}" opacity=".09"/>`;
+      [up,dn].forEach(a=>{g+=`<path d="${pts.map((v,i)=>(i?'L':'M')+x(v[0]).toFixed(1)+','+y(a[i]).toFixed(1)).join('')}" fill="none" stroke="${css('--strat')}" stroke-width="1" stroke-dasharray="1 4" opacity=".55"/>`;});
+      const lx=x(pts[Math.floor(pts.length*.55)][0]);g+=`<text x="${lx}" y="${y(dn[Math.floor(pts.length*.55)])+14}" font-size="10.5" text-anchor="middle" fill="${mut}">⟪中間路徑途中可能的回調 |Possible pullbacks on the base path ⟫${Math.round(sh*100)}% ～ ${Math.round(dp*100)}%</text>`;}}
   K.forEach(([k,c,n])=>{const a=P.paths[k],e=cur[k][cur[k].length-1];g+=`<path d="${a.map((v,i)=>(i?'L':'M')+x(fd[i]).toFixed(1)+','+y(v).toFixed(1)).join('')}" fill="none" stroke="${css(c)}" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round"/>`;
     g+=`<circle cx="${x(curT)}" cy="${y(e)}" r="4.5" fill="${css(c)}" stroke="${css('--bg')}" stroke-width="1.5"/><text x="${x(curT)+8}" y="${y(e)+4}" font-size="11.5" font-weight="600" fill="${css(c)}">${n} $${Math.round(e/1e3)}k</text>`;});
   const h=st.fut.hover;let tip;
