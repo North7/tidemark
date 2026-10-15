@@ -69,8 +69,14 @@ def save_raw(name: str, df: pd.DataFrame):
 def fetch_all(today: pd.Timestamp):
     """回傳 (raw dict, 來源狀態 dict)。"""
     def since(name, back=3):
+        """主要來源從哪天開始重抓：最近 back 天，以及備援來源補過的日子（讓主要來源恢復時覆蓋回去）。"""
         old = load_raw(name)
-        return old.index.max() - pd.Timedelta(days=back) if len(old) else None
+        if not len(old):
+            return None
+        start = old.index.max() - pd.Timedelta(days=back)
+        if "src" in old and (old["src"].fillna(0) > 0).any():
+            start = min(start, old.index[old["src"].fillna(0) > 0].min())
+        return start
 
     cb_old = load_raw("coinbase_premium")
     plan = {
@@ -88,16 +94,25 @@ def fetch_all(today: pd.Timestamp):
     raw, status = {}, {}
     for name, fetchers in plan.items():
         old = load_raw(name)
-        new, errors = None, []
-        for f in fetchers:
+        new, errors, used = None, [], 0
+        for i, f in enumerate(fetchers):
             try:
                 new = f()
                 if len(new):
+                    used = i
                     break
             except Exception as e:  # noqa: BLE001
                 errors.append(str(e)[:200])
         if new is not None and len(new):
-            df = pd.concat([old.reindex(columns=new.columns), new]) if len(old) else new
+            # src：0 = 主要來源，1 以上 = 備援。主要來源覆蓋既有資料；備援只補沒有資料的日子，
+            # 避免兩家交易所的數值每天互相覆蓋（GitHub Actions 在美國連不到 Binance，本機可以）
+            new = new.assign(src=used)
+            if len(old):
+                old = old.reindex(columns=new.columns)
+                old["src"] = old["src"].fillna(0)
+                df = pd.concat([old, new] if used == 0 else [new, old])
+            else:
+                df = new
             df = df[~df.index.duplicated(keep="last")].sort_index()
             save_raw(name, df)
             fetched = True
@@ -164,6 +179,8 @@ def build_bottom(ind, hist, cold_sc, cold_grp, cold_meta, ribbon_min90, btim, bi
     seg = hist.loc[last_top:, "bottom_signal"]
     cur["bottom_signal_max_cycle"] = r(seg.max(), 1)
     cur["bottom_signal_max_date"] = str(seg.idxmax().date()) if seg.notna().any() else None
+    zone = seg[seg >= BOTTOM_WINDOW]
+    cur["bottom_signal_first_zone"] = str(zone.index[0].date()) if len(zone) else None
     cur["days_bottom_zone"] = int((seg >= BOTTOM_WINDOW).sum())
     mvrv_lt1 = int((ind.loc[last_top:, "rp_multiple"] < 1).sum())
     today = str(last.date())
@@ -177,21 +194,28 @@ def build_bottom(ind, hist, cold_sc, cold_grp, cold_meta, ribbon_min90, btim, bi
         hyp_path.write_text(json.dumps(hyp, ensure_ascii=False, indent=2))
     cand_d, cand_p, deadline = pd.Timestamp(hyp["candidate_low_date"]), hyp["candidate_low_price"], hyp["deadline"]
     after = price.loc[cand_d + pd.Timedelta(days=1):].dropna()
-    broken = after[after < cand_p]
+    # 價格突破上一個週期頂部（創新高）後，候選低點就是兩頂之間的最低點，結果永久鎖定，之後的跌勢不再改寫本輪判定
+    top_p = float(price[pd.Timestamp(hyp["cycle_top"])])
+    new_high = after[after > top_p]
+    final_date = str(new_high.index[0].date()) if len(new_high) else None
+    window_px = after.loc[:new_high.index[0]] if final_date else after
+    broken = window_px[window_px < cand_p]
     broken_date = str(broken.index[0].date()) if len(broken) else None
     if broken_date:
         status = "failed"
         verdict = (f"假說不成立：候選低點 ${cand_p:,.0f}（{cand_d.date()}）已於 {broken_date} 被跌破，"
                    f"本輪低點不是週期底部。新的低點為 ${cur['price']:,.0f}（{cur['date']}），如要再驗證需另建新假說。")
-    elif today <= deadline:
+    elif final_date is None and today <= deadline:
         status = "testing"
         verdict = (f"驗證中：若到 {deadline} 為止都沒有跌破候選低點 ${cand_p:,.0f}（{cand_d.date()}），"
                    f"支持「本輪低點即週期底部、ETF 時代熊市變淺」；一旦跌破即判定假說不成立。")
     else:
         status = "supported" if mvrv_lt1 == 0 else "classic"
+        lock = (f"價格已於 {final_date} 突破前頂 ${top_p:,.0f}，結果永久鎖定。" if final_date
+                else f"在價格突破前頂 ${top_p:,.0f} 之前若跌破候選低點，判定會改為不成立；突破後結果永久鎖定。")
         verdict = (f"底部時間窗口已於 {deadline} 結束，候選低點 {cand_d.date()}（${cand_p:,.0f}）未被跌破，"
-                   + ("且估值未出現投降（MVRV 從未跌破 1），支持「熊市變淺」。之後若跌破，判定會改為不成立。" if mvrv_lt1 == 0
-                      else "期間曾出現估值投降（MVRV 跌破 1），屬傳統型底部。"))
+                   + ("且估值未出現投降（MVRV 從未跌破 1），支持「熊市變淺」。" if mvrv_lt1 == 0
+                      else "期間曾出現估值投降（MVRV 跌破 1），屬傳統型底部。") + lock)
     return {
         "signal": r(sig, 1), "level": bottom_level(sig),
         "cold_score": r(float(hist.loc[last, "cold"]), 1),
@@ -209,6 +233,7 @@ def build_bottom(ind, hist, cold_sc, cold_grp, cold_meta, ribbon_min90, btim, bi
                    "last_top": str(last_top.date()), "last_halving": str(last_h.date()),
                    "window_by_top": by_top, "window_by_halving": by_h, **binfo},
         "cycle_test": {"status": status, "decisive_date": deadline, "verdict": verdict, "hypothesis": hyp, "broken_date": broken_date,
+                       "finalized_date": final_date, "cycle_top_price": r(top_p, 2),
                        "current_low": cur, "past_bottoms": past, "days_mvrv_below_1_this_cycle": mvrv_lt1},
         "note": "參數只依 2015、2018、2022 底部與中段假底部決定，本輪為樣本外檢驗。",
     }

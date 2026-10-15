@@ -1,12 +1,12 @@
 {
   "date": "2026-10-15",
-  "generated_at": "2026-10-15T00:16:33Z",
+  "generated_at": "2026-10-15T02:26:06Z",
   "price_usd": 81498.52,
   "price_date": "2026-10-14",
   "top_signal": 0.0,
   "signal_level": "none",
-  "heat_score": 37.9,
-  "composite_score": 37.9,
+  "heat_score": 36.8,
+  "composite_score": 36.8,
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "cold",
@@ -114,14 +114,14 @@
         "group": "礦工",
         "unit": "",
         "description": "礦工收入相對一年均值。過去三次底部為 0.31、0.39、0.48。2024 減半後礦工收入結構性下降，可能使此項偏冷。",
-        "value": 1.2016,
+        "value": 1.1651,
         "score": 0.0,
         "method": "cycle_bottom",
         "expected_bottom": 0.5939,
         "neutral": 1.0,
         "past_bottoms": {
-          "2015-01-14": 0.3123250950141824,
-          "2018-12-15": 0.3893759732132719,
+          "2015-01-14": 0.3123250950141825,
+          "2018-12-15": 0.38937597321327183,
           "2022-11-09": 0.4786260405008019
         }
       },
@@ -232,6 +232,8 @@
         "deadline": "2026-12-19"
       },
       "broken_date": null,
+      "finalized_date": null,
+      "cycle_top_price": 124824.45,
       "current_low": {
         "date": "2026-06-30",
         "price": 58525.08,
@@ -241,6 +243,7 @@
         "nupl": 0.093,
         "bottom_signal_max_cycle": 58.7,
         "bottom_signal_max_date": "2026-07-02",
+        "bottom_signal_first_zone": "2026-06-09",
         "days_bottom_zone": 28
       },
       "past_bottoms": [
@@ -325,13 +328,13 @@
         {
           "key": "fg",
           "threshold": "< 25",
-          "value": 62.2857,
+          "value": 60.7143,
           "met": false
         },
         {
           "key": "funding",
           "threshold": "<= 0",
-          "value": 2.5563,
+          "value": 1.0599,
           "met": false
         }
       ],
@@ -377,13 +380,13 @@
         {
           "key": "fg",
           "threshold": "> 80",
-          "value": 62.2857,
+          "value": 60.7143,
           "met": false
         },
         {
           "key": "funding",
           "threshold": "> p90 (1y)",
-          "value": 2.5563,
+          "value": 1.0599,
           "met": false
         }
       ],
@@ -726,7 +729,7 @@
     "onchain_valuation": {
       "label": "鏈上估值",
       "weight": 0.35,
-      "score": 64.7,
+      "score": 63.3,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -748,7 +751,7 @@
             "2013-12-04": 7.704061973442023,
             "2017-12-16": 9.354234932070232,
             "2021-11-08": 3.5338955722930834,
-            "2025-10-06": 2.5298647876421483
+            "2025-10-06": 2.529864787642148
           }
         },
         "nupl": {
@@ -777,14 +780,14 @@
           "unit": "",
           "role": "score",
           "description": "礦工每日收入 ÷ 365 日均。礦工收入異常高時，往往是價格過熱。",
-          "value": 1.2016,
-          "score": 51.6,
-          "percentile": 68.6,
-          "as_of": "2026-10-13",
+          "value": 1.1651,
+          "score": 45.7,
+          "percentile": 64.7,
+          "as_of": "2026-10-14",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 5633
+          "history_days": 5634
         },
         "rp_multiple": {
           "label": "實現價格倍數",
@@ -804,7 +807,7 @@
             "2013-12-04": 4.718179179999999,
             "2017-12-16": 4.43076633,
             "2021-11-08": 2.854649564891,
-            "2025-10-06": 2.287145426879909
+            "2025-10-06": 2.2871454268799094
           }
         }
       },
@@ -841,7 +844,7 @@
     "capital_flows": {
       "label": "資金流與機構",
       "weight": 0.2,
-      "score": 10.3,
+      "score": 10.1,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -878,9 +881,9 @@
           "unit": "%",
           "role": "score",
           "description": "穩定幣總供給 90 日成長率，代表場內可用的新資金。",
-          "value": 1.7057,
-          "score": 11.3,
-          "percentile": 42.3,
+          "value": 1.5226,
+          "score": 10.5,
+          "percentile": 41.8,
           "as_of": "2026-10-15",
           "stale": false,
           "status": "ok",
@@ -892,9 +895,9 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.1115,
+          "value": -0.119,
           "score": 0.0,
-          "percentile": 5.1,
+          "percentile": 4.5,
           "as_of": "2026-10-15",
           "stale": false,
           "status": "ok",
@@ -907,7 +910,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 7.3,
+      "score": 4.8,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -916,9 +919,9 @@
           "unit": "%",
           "role": "score",
           "description": "永續合約多方付給空方的費率。越高代表槓桿做多越擁擠。",
-          "value": 2.4781,
+          "value": 1.0599,
           "score": 0.0,
-          "percentile": 19.7,
+          "percentile": 13.0,
           "as_of": "2026-10-15",
           "stale": false,
           "status": "ok",
@@ -930,9 +933,9 @@
           "unit": "%",
           "role": "score",
           "description": "全市場 BTC 合約未平倉量占市值比例，代表槓桿規模。",
-          "value": 0.2017,
-          "score": 1.4,
-          "percentile": 35.9,
+          "value": 0.2011,
+          "score": 0.0,
+          "percentile": 33.9,
           "as_of": "2026-10-14",
           "stale": false,
           "status": "ok",
@@ -944,9 +947,9 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 5.1872,
-          "score": 20.5,
-          "percentile": 48.4,
+          "value": 4.9881,
+          "score": 14.4,
+          "percentile": 44.4,
           "as_of": "2026-10-15",
           "stale": false,
           "status": "ok",
@@ -1008,7 +1011,7 @@
     },
     "stablecoins": {
       "fetched": true,
-      "last_date": "2026-10-14",
+      "last_date": "2026-10-15",
       "stale": false,
       "available": true,
       "errors": []

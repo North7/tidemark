@@ -108,16 +108,21 @@ def _verdict(ct) -> str:
                 f"the new low is ${cur['price']:,.0f} ({cur['date']}).⟫")
     if ct["status"] == "testing":
         return (f"⟪驗證中：若到 {d} 為止都沒有跌破候選低點 {cp}（{cd}），支持「本輪低點即週期底部、ETF 時代熊市變淺」；"
-                f"一旦跌破即判定假說不成立。候選低點在建立假說時固定，之後不會跟著新低移動。"
+                f"一旦跌破即判定假說不成立。候選低點在建立假說時固定，之後不會跟著新低移動；價格突破前頂後結果永久鎖定。"
                 f"|Testing: if price holds above the candidate low of {cp} ({cd}) through {d}, that supports "
                 f"“this low is the cycle bottom and ETF-era bears are shallower”. A break below it fails the hypothesis. "
-                f"The candidate low was fixed when the hypothesis was set and does not move with new lows.⟫")
+                f"The candidate low was fixed when the hypothesis was set and does not move with new lows; once price exceeds the previous top, the result is locked.⟫")
     shallow = ct["days_mvrv_below_1_this_cycle"] == 0
+    fin, tp = ct.get("finalized_date"), f"${ct.get('cycle_top_price') or 0:,.0f}"
+    lock_zh = (f"價格已於 {fin} 突破前頂 {tp}，結果永久鎖定。" if fin
+               else f"在價格突破前頂 {tp} 之前若跌破候選低點，判定會改為不成立；突破後結果永久鎖定。")
+    lock_en = (f" Price broke above the previous top of {tp} on {fin}, so the result is locked." if fin
+               else f" If price breaks the candidate low before exceeding the previous top of {tp}, the verdict becomes “failed”; once it exceeds that top, the result is locked.")
     return (f"⟪底部時間窗口已於 {d} 結束，候選低點 {cd}（{cp}）未被跌破，"
-            + ("且估值未出現投降（MVRV 從未跌破 1），支持「熊市變淺」。" if shallow else "期間曾出現估值投降（MVRV 跌破 1），屬傳統型底部。")
+            + ("且估值未出現投降（MVRV 從未跌破 1），支持「熊市變淺」。" if shallow else "期間曾出現估值投降（MVRV 跌破 1），屬傳統型底部。") + lock_zh
             + f"|The bottom window closed on {d} and the candidate low of {cd} ({cp}) held. "
             + ("Valuation never capitulated (MVRV never below 1), supporting “shallower bear markets”." if shallow
-               else "Valuation capitulated at some point (MVRV below 1): a classic bottom.") + "⟫")
+               else "Valuation capitulated at some point (MVRV below 1): a classic bottom.") + lock_en + "⟫")
 
 
 def _fmt(v, unit=""):
@@ -704,6 +709,17 @@ def _strategy(latest: dict) -> str:
       </ol>
       <p class="muted small">⟪頂部訊號與時機會提早亮，所以只用來「進入警戒」；真正賣出要等週線趨勢確認轉空。頂部訊號 = 熱度 × 時機 ÷ 100，不會超過時機，所以警戒條件實際上等於「頂部時機 ≥ 50」，熱度本身不影響交易。門檻固定為 50，未針對歷史最佳化；40／50／60 的 27 種組合都勝過持有，但實際只產生 3 條不同的持倉路徑，不是 27 次獨立驗證。|The top signal and timing light up early, so they only put the strategy on alert; the actual sale waits for the weekly trend to confirm. Top signal = heat × timing ÷ 100 never exceeds timing, so the alert condition is effectively “top timing ≥ 50” and heat itself does not affect trades. Thresholds are fixed at 50, not fitted to history; all 27 combinations of 40/50/60 beat holding, but they produce only 3 distinct position paths — not 27 independent tests.⟫</p>
     </div>"""
+    rs = {x["start"]: x["ratio"] for x in g["by_start"]}
+    extra = (f"<li>⟪超額報酬集中在早期：2014 起勝過持有 {rs.get('2014', 0):.1f} 倍，但從近幾輪起算只有 {rs.get('2018', 0):.1f} 倍（2018）、"
+             f"{rs.get('2020', 0):.1f} 倍（2020）、{rs.get('2022', 0):.1f} 倍（2022）。|The edge is concentrated early: {rs.get('2014', 0):.1f}× holding from 2014, "
+             f"but only {rs.get('2018', 0):.1f}× from 2018, {rs.get('2020', 0):.1f}× from 2020 and {rs.get('2022', 0):.1f}× from 2022.⟫</li>"
+             f"<li>⟪2028 年提前見頂是盲點：進入警戒實際上只看頂部時機，依時鐘最早要到 {g.get('projected_arm') or '—'}。若頂部提前到 2028 年，策略不會進入警戒，會抱著走完整段跌勢。"
+             "歷史上「熱度 ≥ 75、時機 < 30、減半後 150–450 天、距低點 ≥ 650 天」只出現 4 段：2013-11 是週期頂部，但 2021-01、2021-02～03、2024-11～12 之後分別又漲了約 99%、80%、38%"
+             "（2024-11 正是減半後約 200 天、大選剛結束、熱度 87），所以無法只靠熱度提前判斷（2026-10 實測）。|"
+             f"An early top in 2028 is a blind spot: the alert effectively depends only on top timing, which the clocks put no earlier than {g.get('projected_arm') or '—'}. "
+             "If the top comes in 2028, the strategy won’t go on alert and will ride the whole decline. Historically, “heat ≥ 75, timing < 30, 150–450 days after the halving, ≥ 650 days after the low” "
+             "occurred in only 4 stretches: Nov 2013 was the cycle top, but after Jan 2021, Feb–Mar 2021 and Nov–Dec 2024 price rose a further ~99%, ~80% and ~38% "
+             "(Nov 2024 was ~200 days after the halving, right after the election, with heat at 87) — so heat alone can’t flag an early top (tested Oct 2026).⟫</li>")
     bt = g["backtest"]
     bstats = (g.get("batch") or {}).get("by_start") or [None] * len(g["by_start"])
     rows = "".join(
@@ -746,11 +762,14 @@ def _strategy(latest: dict) -> str:
         <li>⟪不是賣在頂部：要等趨勢確認，過去賣出時已從頂部跌了 26–65%。超額報酬主要來自避開熊市、在接近底部時買回。|It does not sell the top: it waits for trend confirmation, and past sales came 26–65% below the peak. The edge comes from sitting out bear markets and buying back near bottoms.⟫</li>
         <li>⟪會犯錯：2021-05 誤賣一次。沒有停損，持有期間仍可能經歷 −70% 到 −80% 的回撤（2018 起點的最大回撤與持有相同）。|It makes mistakes (a bad sale in 2021-05). There is no stop-loss, so drawdowns of −70% to −80% can still happen while holding (from a 2018 start, the max drawdown equals holding’s).⟫</li>
         <li>⟪樣本少：只有 4 次熊市可驗證；若四年週期不再延續，策略可能失效。|Small sample: only four bear markets to test; if the four-year cycle breaks, the strategy may fail.⟫</li>
+        <!--EXTRA-->
         <li>⟪逐輪回測：每一輪只用當時已發生的頂部與底部設定參數；最近一輪即網站目前的訊號。但頂部日期是事後指定的（當時無法立刻確認那就是頂部），資料修訂也沒有保留當時的版本，所以「完全沒有偷看未來」尚未被證明。|Walk-forward: each cycle uses only the tops and bottoms known at the time; the latest cycle uses the site's current signals. But top dates are assigned in hindsight (no one could confirm a top on the day), and data revisions aren’t versioned, so “no look-ahead at all” is not yet proven.⟫</li>
+        <li>⟪頂部確認方式的影響（2026-10 實測）：若改成「頂部後跌 35% 或週線轉空才確認、才切換到下一輪」，2014 起連續運作的交易完全相同，2022 起點則從勝過持有約 1.5 倍變成約 3.1 倍（最大回撤 −67% → −35%）。但即時操作時，2021-05 也從高點跌了 50% 以上，同一條規則會把它誤認成週期頂部，所以這個改法仍要靠事後知道哪個才是頂部，無法完全排除偷看未來。|How tops are confirmed matters (tested Oct 2026): if a top only counts after a 35% drop or a weekly Supertrend turn, the trades from the continuous 2014 run are identical, while the 2022 start goes from about 1.5× to about 3.1× holding (max drawdown −67% → −35%). But in real time, May 2021 also fell more than 50% from its high, and the same rule would have mistaken it for the cycle top — so this still relies on knowing afterwards which peak was the top.⟫</li>
         <li>⟪定案日（2026-10-06）之後，每天的決策寫入只新增、不改寫的紀錄（data/strategy_ledger.csv），定案後追蹤以這份紀錄為準。|From the finalization date (2026-10-06), each day’s decision is appended to a record that is never rewritten (data/strategy_ledger.csv); live tracking uses that record.⟫</li>
         <li>⟪模擬結果，不代表實際交易；僅供參考，不構成投資建議。|Simulated results, not actual trading. For reference only — not investment advice.⟫</li>
       </ul>
     </div>"""
+    limits = limits.replace("<!--EXTRA-->", extra)
     return f"""
   <div class="view-head"><div class="sec-n">⟪週期策略|CYCLE STRATEGY⟫ · ⟪回測模擬|BACKTEST⟫</div><h2>⟪週期|Cycle⟫ <span>⟪策略|strategy⟫</span></h2>
     <p>⟪「警戒 + 趨勢確認」：用頂部／底部訊號判斷週期位置，用週線 Supertrend 確認趨勢。逐輪回測自 2014 年起 {_x(bt['strategy'])}，同期持有 {_x(bt['hold'])}。|“Alert + trend confirmation”: the top/bottom signals locate the cycle and the weekly Supertrend confirms the trend. Walk-forward backtest since 2014: {_x(bt['strategy'])} vs {_x(bt['hold'])} for holding.⟫</p>
@@ -844,7 +863,9 @@ def _hero(mode: str, latest: dict, ncat: int) -> str:
         hz = _heat_zone(latest["heat_score"])
         kpis = [(f"{latest['heat_score']:.0f}", f"⟪熱度|Heat⟫ · {HEAT_TEXT[hz]}", "#heat"),
                 (f"{latest['timing_score']:.0f}", "⟪時機|Timing⟫", "#timing"),
-                (f"{latest['hot_categories']}<small>/{ncat}</small>", "⟪熱類別 ≥ 80|Hot ≥ 80⟫", "#heat")]
+                (f"{latest['hot_categories']}<small>/{ncat}</small>", "⟪熱類別 ≥ 80|Hot ≥ 80⟫", "#heat",
+                 "⟪類別分數 ≥ 80 的類別數。原本 5 類，持有者行為沒有免費、可公開的完整數據，不計分，所以是 4 類。|"
+                 "Categories scoring ≥ 80. There were 5; holder behavior has no free, republishable full history and isn’t scored, so there are 4.⟫")]
         marks = [("⟪熱度|Heat⟫", latest["heat_score"]), ("⟪時機|Timing⟫", latest["timing_score"])]
         thr = [(SIGNAL_WINDOW, "⟪頂部窗口|Top window⟫"), (SIGNAL_ALERT, "⟪高度警戒|High alert⟫")]
     else:
@@ -854,6 +875,13 @@ def _hero(mode: str, latest: dict, ncat: int) -> str:
         level = BOTTOM_LEVEL_TEXT[b["level"]]
         lede = (f"⟪冷度 × 底部時機。本輪低點|Coldness × bottom timing. Is this cycle's low⟫ ${ct['current_low']['price']:,.0f} "
                 f"⟪是否就是週期底部？判定日|the cycle bottom? Verdict on⟫ <b>{ct['decisive_date']}</b>")
+        cl = ct["current_low"]
+        if b["level"] == "none" and (cl.get("bottom_signal_max_cycle") or 0) >= BOTTOM_WINDOW and cl.get("bottom_signal_first_zone"):
+            # 現在沒觸發，但本輪已觸發過（策略頁的買回就是那時發生），避免首屏與策略頁看起來矛盾
+            level = "⟪目前未觸發|Not triggered now⟫"
+            lede = (f"<b>⟪本輪已於 {cl['bottom_signal_first_zone']} 觸發，最高 {cl['bottom_signal_max_cycle']:.0f}（{cl['days_bottom_zone']} 天 ≥ 50）。|"
+                    f"Triggered earlier this cycle from {cl['bottom_signal_first_zone']}, peaking at {cl['bottom_signal_max_cycle']:.0f} "
+                    f"({cl['days_bottom_zone']} days ≥ 50).⟫</b> " + lede)
         kpis = [(f"{b['cold_score']:.0f}", "⟪冷度|Coldness⟫", "#b/heat"),
                 (f"{b['timing']['score']:.0f}", "⟪底部時機|Bottom timing⟫", "#b/timing"),
                 (_n(ct["current_low"]["bottom_signal_max_cycle"]), "⟪本輪最高|Cycle peak⟫", "#b/overview")]
@@ -866,7 +894,8 @@ def _hero(mode: str, latest: dict, ncat: int) -> str:
     low = 0 if pos[0] <= pos[1] else 1  # 兩條刻度太近時，較低者的標籤放到線下方避免重疊
     mk_html = "".join(f'<div class="mk{" below" if i == low and abs(pos[0] - pos[1]) < 9 else ""}" style="bottom:{pos[i]:.1f}%"><span>{lbl}<b>{val or 0:.0f}</b></span></div>'
                       for i, (lbl, val) in enumerate(marks))
-    kpi_html = "".join(f'<a class="kpi2" href="{href}"><b>{val}</b><span>{lbl}</span></a>' for val, lbl, href in kpis)
+    tip = lambda k: f' title="{k[3]}"' if len(k) > 3 else ""
+    kpi_html = "".join(f'<a class="kpi2" href="{k[2]}"{tip(k)}><b>{k[0]}</b><span>{k[1]}</span></a>' for k in kpis)
     num = f"{v:.0f}"
     pad = num.rjust(2, "0")
     lead = pad[:len(pad) - len(num)] if len(num) < 2 else ""
@@ -1007,19 +1036,24 @@ def _bottom_cold(latest: dict, ind_meta: dict) -> str:
 
 def _bottom_table(hist: pd.DataFrame, latest: dict) -> str:
     groups = list(latest["bottom"]["groups"])
-    h = hist.dropna(subset=["price"]).tail(30).iloc[::-1]
+    h = hist.dropna(subset=["bottom_signal"]).tail(30).iloc[::-1]
     head = "".join(f"<th>{_grp(g)}</th>" for g in groups)
     keys = {"估值": "valuation", "礦工": "miners", "價格結構": "price"}
     rows = []
     for d, r in h.iterrows():
         cells = "".join(_hc(r.get('coldgrp_' + keys[g]), "--s-cold") for g in groups)
-        rows.append(f"<tr><td>{d:%m-%d}</td><td>{r['price']:,.0f}</td>{_hc(r['bottom_signal'], '--s-bot')}"
+        rows.append(f"<tr><td>{d:%m-%d}</td><td>{_px(r['price'])}</td>{_hc(r['bottom_signal'], '--s-bot')}"
                     f"{_hc(r['cold'], '--s-cold')}{_hc(r['bottom_timing'], '--botline')}{cells}</tr>")
     return (f"<table class='data'><thead><tr><th>⟪日期|Date⟫</th><th>⟪價格|Price⟫</th><th>⟪底部訊號|Bottom signal⟫</th><th>⟪冷度|Coldness⟫</th><th>⟪底部時機|Bottom timing⟫</th>"
-            f"{head}</tr></thead><tbody>{''.join(rows)}</tbody></table>")
+            f"{head}</tr></thead><tbody>{''.join(rows)}</tbody></table>" + ("" if len(h) and pd.notna(h.iloc[0]["price"]) else "<p class='muted small' style='margin:8px 0 0'>⟪最上面一列是今天：價格要等當日收盤後才有，先顯示「—」；分數已用當天可取得的數據計算（恐懼貪婪、衍生品通常比價格早一天更新）。|The top row is today: the price appears after the daily close, so it shows “—” for now; scores already use whatever data is available today (sentiment and derivatives usually update a day ahead of price).⟫</p>"))
 
 
 GRP_KEY = {"估值": "valuation", "礦工": "miners", "價格結構": "price"}
+
+
+def _px(v) -> str:
+    """數據表的價格：當天還沒有收盤價時顯示「—」（分數已用當天可取得的數據計算）。"""
+    return "—" if v is None or pd.isna(v) else f"{v:,.0f}"
 
 
 def _hc(v, var="--a1"):
@@ -1031,15 +1065,15 @@ def _hc(v, var="--a1"):
 
 
 def _recent_table(hist: pd.DataFrame, cats: dict) -> str:
-    h = hist.dropna(subset=["price"]).tail(30).iloc[::-1]
+    h = hist.dropna(subset=["heat"]).tail(30).iloc[::-1]
     head = "".join(f"<th>{CAT_SHORT.get(k, c['label'])}</th>" for k, c in cats.items())
     rows = []
     for d, r in h.iterrows():
         cells = "".join(_hc(r.get('cat_' + k), "--s-heat") for k in cats)
-        rows.append(f"<tr><td>{d:%m-%d}</td><td>{r['price']:,.0f}</td>{_hc(r['top_signal'], '--s-sig')}"
+        rows.append(f"<tr><td>{d:%m-%d}</td><td>{_px(r['price'])}</td>{_hc(r['top_signal'], '--s-sig')}"
                     f"{_hc(r['heat'], '--s-heat')}{_hc(r['timing'], '--topline')}{cells}</tr>")
     return (f"<table class='data'><thead><tr><th>⟪日期|Date⟫</th><th>⟪價格|Price⟫</th><th>⟪訊號|Signal⟫</th><th>⟪熱度|Heat⟫</th><th>⟪時機|Timing⟫</th>"
-            f"{head}</tr></thead><tbody>{''.join(rows)}</tbody></table>")
+            f"{head}</tr></thead><tbody>{''.join(rows)}</tbody></table>" + ("" if len(h) and pd.notna(h.iloc[0]["price"]) else "<p class='muted small' style='margin:8px 0 0'>⟪最上面一列是今天：價格要等當日收盤後才有，先顯示「—」；分數已用當天可取得的數據計算（恐懼貪婪、衍生品通常比價格早一天更新）。|The top row is today: the price appears after the daily close, so it shows “—” for now; scores already use whatever data is available today (sentiment and derivatives usually update a day ahead of price).⟫</p>"))
 
 
 def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
@@ -1881,6 +1915,7 @@ main.wrap{padding-top:var(--hdr,96px)}
 .ref-links a{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--fg);text-decoration:none;padding:7px 11px;border-radius:10px;border:1px solid var(--line2);background:var(--surface)}
 .ref-links a:hover{border-color:var(--fg)}
 .ref-links svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cat-note{margin:10px 2px 0;max-width:900px}
 .holder-note{margin:16px 2px 0;font-size:13.5px;line-height:1.7;color:var(--mut);max-width:900px}
 .holder-note a{color:var(--fg);font-weight:600}
 .sec-tag{font:600 11px var(--mono);letter-spacing:.12em;color:var(--mut);padding:8px 14px;border:1px dashed var(--line2);border-radius:999px;white-space:nowrap}
@@ -2136,6 +2171,7 @@ __TICKER__
   <div class="sec reveal">
     <div class="sec-h"><div><div class="sec-n">HEAT BY CATEGORY</div><h2>⟪各類|Heat by⟫<em>⟪熱度|category⟫</em></h2></div><a class="sec-link" href="#heat">⟪全部指標|All indicators⟫ →</a></div>
     __BIGCATS__
+    <p class="muted small cat-note">⟪持有者行為沒有免費、可公開的完整數據，不計分；原本 20% 的權重依比例分給其他四類，所以這裡的權重高於原始設定（35%、20%、15%、10%）。|Holder behavior has no free, republishable full history and isn’t scored; its 20% weight is spread proportionally across the other four, so the weights here are higher than the original 35%, 20%, 15% and 10%.⟫</p>
   </div>
   <div class="sec reveal">
     <div class="sec-h"><div><div class="sec-n">CYCLE POSITION</div><h2>⟪週期|Cycle⟫<em>⟪位置|position⟫</em></h2></div><a class="sec-link" href="#timing">⟪時機詳情|Timing details⟫ →</a></div>

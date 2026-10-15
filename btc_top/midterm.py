@@ -66,6 +66,11 @@ def compute_midterm(ind: pd.DataFrame, ohlc: pd.DataFrame, today: pd.Timestamp):
     v["roi30"] = p / p.shift(30) - 1
     v["fg"] = ind["fear_greed_7d"].reindex(idx)
     v["funding"] = ind["funding_7d_ann"].reindex(idx)
+    # 恐懼貪婪、資金費率常比價格早一天更新：最新一列改用各自最新的數值，與總覽、熱度頁顯示的一致
+    for col, key in (("fg", "fear_greed_7d"), ("funding", "funding_7d_ann")):
+        s = ind[key].dropna()
+        if len(s) and s.index[-1] > idx[-1]:
+            v.loc[idx[-1], col] = s.iloc[-1]
     fund_hi = v["funding"].rolling(365, min_periods=180).quantile(0.9)
     dip = pd.DataFrame({"rsi_d": v.rsi_d < 35, "ma50": v.ma50 < -0.10, "roi30": v.roi30 < -0.15,
                         "fg": v.fg < 25, "funding": v.funding <= 0})
