@@ -31,7 +31,7 @@ git fetch -q && git log --oneline HEAD..origin/main
   ```
   若有本機新產生、但遠端也有的未追蹤檔（例如 `data/strategy_ledger.csv`），先確認內容只是同一天的重複紀錄再刪除本機那份。
   `docs/case-study/` 是手動維護的作品集頁，若有未提交的修改不可丟掉，先單獨處理。
-- 不可改寫的檔案：`data/strategy_ledger.csv`（只能新增列）、`data/scenario_snapshot.json`、`data/cycle_test.json`（凍結的假說）。
+- 不可改寫的檔案：`data/strategy_ledger.csv`、`data/strategy_ledger_early.csv`（只能新增列）、`data/scenario_snapshot.json`、`data/cycle_test.json`（凍結的假說）。
 
 ## 2. 重跑與自動檢查
 
@@ -43,7 +43,7 @@ git fetch -q && git log --oneline HEAD..origin/main
 - `checks` 有「錯誤」就不能推送：先修好。「警告」（資料過期等）照實告訴使用者。
 - 確認不可改寫的檔案只有新增、沒有刪改（這行沒有輸出才對）：
   ```bash
-  git diff -U0 data/strategy_ledger.csv data/scenario_snapshot.json data/cycle_test.json | grep '^-[^-]'
+  git diff -U0 -- data/strategy_ledger.csv data/strategy_ledger_early.csv data/scenario_snapshot.json data/cycle_test.json | grep '^-[^-]'
   ```
 
 ## 3. 頁面有改時：看畫面
