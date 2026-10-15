@@ -17,7 +17,7 @@ import pandas as pd
 from btc_top import sources
 from btc_top.midterm import compute_midterm
 from btc_top.strategy import compute_strategy, projected_arm
-from btc_top.scenarios import compute_scenarios, track_scenarios
+from btc_top.scenarios import compute_scenarios, log_scenarios, track_scenarios
 from btc_top.events import detect as detect_events
 from btc_top.checks import run_checks
 from btc_top.page import render_page
@@ -387,7 +387,13 @@ def main():
         snap = DATA / "scenario_snapshot.json"
         if not snap.exists():
             snap.write_text(json.dumps({k: latest["scenarios"][k] for k in ("as_of", "top_date", "tops", "dates", "paths")}, ensure_ascii=False))
-        latest["scenarios"]["tracking"] = track_scenarios(json.loads(snap.read_text()), ind["price"])
+        try:
+            latest["scenarios"]["tracking"] = track_scenarios(json.loads(snap.read_text()), ind["price"])
+            # 情境變動紀錄（只新增）：每天一列，標出明顯變動與原因
+            latest["scenarios"]["history"] = log_scenarios(DATA / "scenario_history.csv", latest["scenarios"], timing,
+                                                           json.loads(snap.read_text()))
+        except Exception as e:  # noqa: BLE001
+            print("情境追蹤失敗：", e)
 
     DOCS.mkdir(parents=True, exist_ok=True)
     old_path = DOCS / "latest.json"

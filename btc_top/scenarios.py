@@ -94,17 +94,74 @@ def compute_scenarios(ind: pd.DataFrame, timing: dict, today: pd.Timestamp) -> d
     }
 
 
+# 走勢偏離提示：實際價格連續 RANGE_DAYS 天低於保守路徑、或高於樂觀路徑超過 RANGE_TOL，代表模型假設可能正在失效。
+# 20% 約為比特幣一個月的典型波動，30 天避免短期雜訊；屬事前判斷，未用歷史最佳化。
+RANGE_TOL, RANGE_DAYS = 0.20, 30
+
+
 def track_scenarios(snap: dict, price: pd.Series) -> dict:
-    """定案日凍結的三條路徑 vs 實際價格：今天各情境「當時預估的價格」與實際的差距、最貼近哪一條。"""
+    """定案日凍結的三條路徑 vs 實際價格：今天各情境「當時預估的價格」與實際的差距、最貼近哪一條、是否持續超出範圍。"""
     p = price.dropna()
     d, now = p.index[-1], float(p.iloc[-1])
     dates = pd.to_datetime(snap["dates"])
     t = np.array([(x - dates[0]).days for x in dates], float)
-    td = (d - dates[0]).days
-    rows = {}
-    for k, path in snap["paths"].items():
-        v = float(np.exp(np.interp(td, t, np.log(path))))
-        rows[k] = {"expected": round(v, 0), "diff": round(now / v - 1, 4) + 0.0}
+    hist = p[dates[0]:]
+    td_all = np.array([(x - dates[0]).days for x in hist.index], float)
+    exp = {k: pd.Series(np.exp(np.interp(td_all, t, np.log(path))), index=hist.index) for k, path in snap["paths"].items()}
+    rows = {k: {"expected": round(float(v.iloc[-1]), 0), "diff": round(now / float(v.iloc[-1]) - 1, 4) + 0.0} for k, v in exp.items()}
     closest = min(rows, key=lambda k: abs(np.log(now / rows[k]["expected"])))
+
+    def streak(mask: pd.Series) -> int:
+        m = mask.values[::-1]
+        return int(np.argmin(m)) if not m.all() else int(len(m))
+
+    below, above = hist < exp["conservative"], hist > exp["optimistic"]
+    far_below, far_above = hist < exp["conservative"] * (1 - RANGE_TOL), hist > exp["optimistic"] * (1 + RANGE_TOL)
+    pos = "below" if below.iloc[-1] else "above" if above.iloc[-1] else "inside"
+    alert = ("below" if streak(far_below) >= RANGE_DAYS else "above" if streak(far_above) >= RANGE_DAYS else None)
     return {"snapshot_date": snap["as_of"], "as_of": str(d.date()), "price": round(now, 2), "rows": rows, "closest": closest,
-            "tops": snap["tops"], "top_date": snap["top_date"]}
+            "tops": snap["tops"], "top_date": snap["top_date"],
+            "range": {"position": pos, "below_days": streak(below), "above_days": streak(above),
+                      "far_below_days": streak(far_below), "far_above_days": streak(far_above),
+                      "tolerance": RANGE_TOL, "min_days": RANGE_DAYS, "alert": alert}}
+
+
+# 情境變動紀錄：每天把三個頂部估計與輸入寫進只新增的 CSV，標出「明顯變動」與原因
+HIST_COLS = ["date", "conservative", "base", "optimistic", "top_date", "cycle_low_date", "cycle_low_price", "realized_price"]
+CHANGE_PCT = 0.03  # 任一頂部估計相對上次變動點累積變動 ≥ 3% 才算明顯變動（中間情境會隨實現價格每天微調）
+
+
+def log_scenarios(path, sc: dict, timing: dict, snap: dict | None) -> dict:
+    from pathlib import Path
+    path = Path(path)
+    old = pd.read_csv(path, dtype=str) if path.exists() else pd.DataFrame(columns=HIST_COLS)
+    rows = old.to_dict("records")
+    if not rows and snap:  # 第一筆：定案時凍結的情境（當時的本輪低點與今天相同）
+        rows.append({"date": snap["as_of"], **{k: snap["tops"][k] for k in ("conservative", "base", "optimistic")},
+                     "top_date": snap["top_date"], "cycle_low_date": timing["cycle_low_date"],
+                     "cycle_low_price": sc["inputs"]["cycle_low"], "realized_price": ""})
+    if sc["as_of"] not in {str(r["date"]) for r in rows}:
+        rows.append({"date": sc["as_of"], **{k: sc["tops"][k] for k in ("conservative", "base", "optimistic")},
+                     "top_date": sc["top_date"], "cycle_low_date": timing["cycle_low_date"],
+                     "cycle_low_price": sc["inputs"]["cycle_low"], "realized_price": sc["inputs"]["realized_price"]})
+        pd.DataFrame(rows, columns=HIST_COLS).to_csv(path, index=False)
+    # 找出明顯變動
+    keys = ("conservative", "base", "optimistic")
+    events, anchor, prev = [], rows[0], rows[0]
+    for r in rows[1:]:
+        reason = None
+        if str(r["cycle_low_date"]) != str(prev["cycle_low_date"]):
+            reason = ("low", f"{r['cycle_low_date']}", float(r["cycle_low_price"]))
+        elif str(r["top_date"]) != str(prev["top_date"]):
+            reason = ("top_date", str(r["top_date"]), None)
+        elif any(abs(float(r[k]) / float(anchor[k]) - 1) >= CHANGE_PCT for k in keys):
+            reason = ("drift", None, None)
+        if reason:
+            events.append({"date": str(r["date"]), "reason": reason[0], "detail": reason[1], "low_price": reason[2],
+                           "tops": {k: float(r[k]) for k in keys}, "prev_tops": {k: float(anchor[k]) for k in keys}})
+            anchor = r
+        prev = r
+    first = rows[0]
+    return {"since": str(first["date"]), "rows": len(rows), "change_pct": CHANGE_PCT,
+            "since_first": {k: round(float(sc["tops"][k]) / float(first[k]) - 1, 4) for k in keys},
+            "events": events[-5:], "last_event": events[-1] if events else None}

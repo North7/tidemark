@@ -576,6 +576,7 @@ def _future(latest: dict) -> str:
     return f"""
   <div class="card st-fut">
     <div class="card-head"><div><div class="eyebrow">SCENARIOS · ⟪情境推演，不是預測|SCENARIOS, NOT FORECASTS⟫</div><h3>⟪下一個頂部的三種情境|Three scenarios for the next top⟫</h3></div></div>
+    {_scn_status(c)}
     <div class="fut-kpis">
       <div class="c"><span>⟪保守|Conservative⟫</span><b>{_k(t['conservative'])}</b><em>⟪{t['conservative'] / c['price']:.1f} 倍於今天|{t['conservative'] / c['price']:.1f}× today⟫</em></div>
       <div class="m"><span>⟪中間|Base⟫</span><b>{_k(t['base'])}</b><em>⟪{t['base'] / c['price']:.1f} 倍於今天|{t['base'] / c['price']:.1f}× today⟫</em></div>
@@ -602,6 +603,48 @@ def _future(latest: dict) -> str:
 
 
 SCN_ZH = {"conservative": "⟪保守|Conservative⟫", "base": "⟪中間|Base⟫", "optimistic": "⟪樂觀|Optimistic⟫"}
+
+
+def _scn_status(c: dict) -> str:
+    """未來情境卡片上方：實際走勢 vs 定案時凍結的路徑（是否持續超出範圍），以及頂部估計的變動紀錄。"""
+    tr, h = c.get("tracking"), c.get("history")
+    if not tr:
+        return ""
+    rg = tr.get("range") or {}
+    tol, nd = round((rg.get("tolerance") or 0) * 100), rg.get("min_days")
+    rows = tr["rows"]
+    if rg.get("alert") == "below":
+        pos = (f"<p class='scn-alert'>⟪<b>走勢已低於情境範圍</b>：已連續 {rg['far_below_days']} 天比保守路徑低 {tol}% 以上。底部假說或週期節奏可能正在改變，請對照「週期結構驗證」。|"
+               f"<b>Price is below the scenario range</b>: more than {tol}% under the conservative path for {rg['far_below_days']} straight days. The bottom hypothesis or the cycle's pace may be changing — check the cycle structure test.⟫</p>")
+    elif rg.get("alert") == "above":
+        pos = (f"<p class='scn-alert'>⟪<b>走勢已高於情境範圍</b>：已連續 {rg['far_above_days']} 天比樂觀路徑高 {tol}% 以上，漲得比過去三輪快，需留意提前見頂的風險（見防提前見頂版）。|"
+               f"<b>Price is above the scenario range</b>: more than {tol}% over the optimistic path for {rg['far_above_days']} straight days — rising faster than the last three cycles; watch the early-top risk (see the early-top version).⟫</p>")
+    else:
+        dc, do_ = f"{abs(rows['conservative']['diff']) * 100:.1f}%", f"{abs(rows['optimistic']['diff']) * 100:.1f}%"
+        where = {"below": f"⟪低於保守路徑 {dc}（已連續 {rg.get('below_days')} 天）|{dc} below the conservative path ({rg.get('below_days')} days running)⟫",
+                 "above": f"⟪高於樂觀路徑 {do_}（已連續 {rg.get('above_days')} 天）|{do_} above the optimistic path ({rg.get('above_days')} days running)⟫",
+                 "inside": "⟪在保守與樂觀路徑之間|between the conservative and optimistic paths⟫"}[rg.get("position", "inside")]
+        pos = (f"<p class='scn-pos'>⟪<b>實際走勢</b>：今天的價格|<b>Price vs scenarios</b>: today's price is⟫ {where}"
+               f"⟪（對照 {tr['snapshot_date']} 凍結的路徑）。連續 {nd} 天超出範圍 {tol}% 以上才會提醒——{tol}% 約為比特幣一個月的典型波動。|"
+               f" (vs the paths frozen on {tr['snapshot_date']}). A warning appears only after {nd} straight days more than {tol}% outside the range — {tol}% is roughly one month of typical bitcoin volatility.⟫</p>")
+    chg = ""
+    if h:
+        sf = h["since_first"]
+        drift = "⟪、|, ⟫".join(f"{SCN_ZH[k]} {_spct(sf[k])}" for k in ("conservative", "base", "optimistic"))
+        ev = h.get("last_event")
+        if ev:
+            why = {"low": f"⟪本輪低點更新為 {ev['detail']}（${ev['low_price']:,.0f}）|the cycle low moved to {ev['detail']} (${ev['low_price']:,.0f})⟫",
+                   "top_date": f"⟪預估頂部日改為 {ev['detail']}|the projected top date moved to {ev['detail']}⟫",
+                   "drift": f"⟪實現價格或冪律趨勢累積變動超過 {round(h['change_pct'] * 100)}%|realized price or the power-law trend drifted more than {round(h['change_pct'] * 100)}%⟫"}[ev["reason"]]
+            last = f"⟪上次明顯變動：{ev['date']}，{why}。|Last notable change: {ev['date']} — {why}.⟫"
+        else:
+            last = (f"⟪定案以來沒有明顯變動（任一頂部估計累積變動 ≥ {round(h['change_pct'] * 100)}% 或本輪低點、頂部日改變才算）。|"
+                    f"No notable change since the snapshot (counted when any top estimate drifts ≥ {round(h['change_pct'] * 100)}% or the cycle low or top date changes).⟫")
+        chg = (f"<p class='scn-chg'>⟪<b>頂部估計的變動</b>：自 {h['since']} 起|<b>How the estimates moved</b>: since {h['since']},⟫ {drift}。{last}"
+               f"⟪每天的估計都寫入只新增的紀錄（data/scenario_history.csv），變動不會被事後掩蓋。|"
+               f" Each day's estimates go into an append-only record (data/scenario_history.csv), so changes can't be quietly rewritten.⟫</p>")
+    return f'<div class="scn-status">{pos}{chg}</div>'
+
 
 
 def _live(latest: dict) -> str:
@@ -1939,6 +1982,8 @@ main.wrap{padding-top:var(--hdr,96px)}
 .ref-links a:hover{border-color:var(--fg)}
 .ref-links svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .cat-note{margin:10px 2px 0;max-width:900px}
+.scn-status{margin:0 0 14px;display:grid;gap:6px}.scn-status p{margin:0;font-size:13.5px;line-height:1.7;color:var(--mut);max-width:1000px}.scn-status b{color:var(--fg)}
+.scn-alert{padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--warm) 45%,transparent);background:color-mix(in srgb,var(--warm) 10%,transparent)}
 .holder-note{margin:16px 2px 0;font-size:13.5px;line-height:1.7;color:var(--mut);max-width:900px}
 .holder-note a{color:var(--fg);font-weight:600}
 .sec-tag{font:600 11px var(--mono);letter-spacing:.12em;color:var(--mut);padding:8px 14px;border:1px dashed var(--line2);border-radius:999px;white-space:nowrap}

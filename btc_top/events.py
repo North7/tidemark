@@ -44,6 +44,12 @@ def detect(old: dict | None, new: dict) -> list[dict]:
                 ev.append({"type": "early_trade", "text": f"防提前見頂版（對照）：{'全部賣出' if not en.get('position') else '全部買回'}"})
             elif not eo.get("armed") and en.get("armed") and not sn.get("armed"):
                 ev.append({"type": "early_arm", "text": "防提前見頂版（對照）進入警戒：距本輪低點已滿 650 天且近期創歷史新高；主策略仍未警戒"})
+        ao, an = _get(old, "scenarios", "tracking", "range", "alert"), _get(new, "scenarios", "tracking", "range", "alert")
+        if an and an != ao:
+            ev.append({"type": "scenario_range", "text": "未來情境：價格已連續 30 天" + ("低於保守路徑 20% 以上" if an == "below" else "高於樂觀路徑 20% 以上") + "，模型假設可能正在失效"})
+        lo, ln = _get(old, "scenarios", "history", "last_event"), _get(new, "scenarios", "history", "last_event")
+        if ln and ln != lo:
+            ev.append({"type": "scenario_change", "text": f"未來情境的頂部估計有明顯變動（{ln['date']}）"})
         do, dn = _get(old, "midterm", "supertrend_weekly", "direction"), _get(new, "midterm", "supertrend_weekly", "direction")
         if do and dn and do != dn:
             line = _get(new, "midterm", "supertrend_weekly", "line")
