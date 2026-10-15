@@ -575,7 +575,8 @@ def _future(latest: dict) -> str:
     t, i = c["tops"], c["inputs"]
     return f"""
   <div class="card st-fut">
-    <div class="card-head"><div><div class="eyebrow">SCENARIOS · ⟪情境推演，不是預測|SCENARIOS, NOT FORECASTS⟫</div><h3>⟪下一個頂部的三種情境|Three scenarios for the next top⟫</h3></div></div>
+    <div class="card-head"><div><div class="eyebrow">SCENARIOS · ⟪情境推演，不是預測|SCENARIOS, NOT FORECASTS⟫</div><h3>⟪下一個頂部的三種情境|Three scenarios for the next top⟫</h3></div>
+      <div class="seg" data-g="fut"><button data-y="0" class="on">⟪情境全貌|Full view⟫</button><button data-y="1">⟪定案後對照|Since snapshot⟫</button></div></div>
     {_scn_status(c)}
     <div class="fut-kpis">
       <div class="c"><span>⟪保守|Conservative⟫</span><b>{_k(t['conservative'])}</b><em>⟪{t['conservative'] / c['price']:.1f} 倍於今天|{t['conservative'] / c['price']:.1f}× today⟫</em></div>
@@ -591,6 +592,7 @@ def _future(latest: dict) -> str:
       <span class="static"><i style="height:0;background:none;border-top:2px dashed var(--strat)"></i>⟪中間|Base⟫</span>
       <span class="static"><i style="height:0;background:none;border-top:2px dashed var(--topline)"></i>⟪樂觀|Optimistic⟫</span>
       <span class="static"><i style="height:10px;background:color-mix(in srgb,var(--a3) 30%,transparent)"></i>⟪預估頂部窗口|Projected top window⟫</span>
+      <span class="static"><i style="height:10px;background:color-mix(in srgb,var(--mut) 22%,transparent);border-top:1px dotted var(--mut);border-bottom:1px dotted var(--mut)"></i>⟪提醒範圍（「定案後對照」：凍結的保守路徑 −20% ～ 樂觀路徑 +20%）|Warning range (“Since snapshot”: frozen conservative −20% to optimistic +20%)⟫</span>
     </div>
     <ul class="fut-how">
       <li><b>⟪保守|Conservative⟫</b>⟪頂部 ÷ 前一輪低點的倍數逐輪遞減（{' → '.join(f'{x:g}' for x in i['top_over_prior_low'])}），外推下一輪約 {i['next_top_over_low']} 倍 × 本輪低點 ${i['cycle_low']:,.0f}。|The top-to-prior-low multiple keeps shrinking ({' → '.join(f'{x:g}' for x in i['top_over_prior_low'])}); extrapolated to about {i['next_top_over_low']}× × this cycle's ${i['cycle_low']:,.0f} low.⟫</li>
@@ -598,11 +600,20 @@ def _future(latest: dict) -> str:
       <li><b>⟪樂觀|Optimistic⟫</b>⟪冪律趨勢價（全部歷史擬合，頂部倍數取 1.0）。若頂部倍數也照 11 → 6.6 → 2.9 → 1.2 的趨勢再下降，結果會接近「中間」。|The power-law trend price (fitted on all history, top multiple 1.0). If the top multiple keeps falling along 11 → 6.6 → 2.9 → 1.2, the result lands near “Base”.⟫</li>
       <li><b>⟪未畫出|Not drawn⟫</b>⟪頂部 ÷ 前一頂部（{' → '.join(f'{x:g}' for x in i['top_over_prior_top'])}）外推約 {_k(i['ratio_method_top'])}，低於上一個頂部，等於「下一輪不創新高」；列出供參考。|Top ÷ previous top ({' → '.join(f'{x:g}' for x in i['top_over_prior_top'])}) extrapolates to about {_k(i['ratio_method_top'])} — below the last top, i.e. no new high next cycle; listed for reference.⟫</li>
     </ul>
-    <p class="muted small" style="margin:6px 0 0">⟪路徑形狀取過去三輪「低點 → 頂部」走法的平均，從今天的價格接到各情境頂部（經平滑並強制只升不降，實際走勢會有大回調）；頂部日期取兩個時機時鐘預估中心的中點。各方法只有 3–4 個歷史點，且都假設「漲幅逐輪遞減」會延續，最低與最高相差約 {t['optimistic'] / t['conservative']:.0f} 倍——這個差距本身就是不確定性。每日依最新數據重算；不是預測，也不是目標價。|Path shape is the average of the last three cycles' low-to-top paths, joined from today's price to each scenario top (smoothed and forced to only rise — real prices will have big pullbacks); the top date is the midpoint of the two timing clocks' centers. Each method rests on only 3–4 data points and assumes diminishing returns continue; high and low differ by about {t['optimistic'] / t['conservative']:.0f}× — that gap is the uncertainty. Recomputed daily; not a forecast or a price target.⟫</p>
+    <p class="muted small" style="margin:6px 0 0">⟪虛線是定案日（{(c.get('tracking') or {}).get('snapshot_date', '—')}）凍結的路徑，不會每天依最新價格重畫，所以能看出實際走勢偏離多少；右端圓點是每天依最新數據重算的頂部估計，只有本輪低點、實現價格等結構輸入改變時才會移動。路徑形狀取過去三輪「低點 → 頂部」走法的平均（經平滑並強制只升不降，實際走勢會有大回調）；頂部日期取兩個時機時鐘預估中心的中點。各方法只有 3–4 個歷史點，且都假設「漲幅逐輪遞減」會延續，最低與最高相差約 {t['optimistic'] / t['conservative']:.0f} 倍——這個差距本身就是不確定性。每日依最新數據重算；不是預測，也不是目標價。|Dashed lines are the paths frozen on {(c.get('tracking') or {}).get('snapshot_date', '—')}; they are not redrawn from each day's price, so you can see how far actual prices drift. The dots at the right are each day's recomputed top estimates, which move only when structural inputs such as the cycle low or realized price change. Path shape is the average of the last three cycles' low-to-top paths (smoothed and forced to only rise — real prices will have big pullbacks); the top date is the midpoint of the two timing clocks' centers. Each method rests on only 3–4 data points and assumes diminishing returns continue; high and low differ by about {t['optimistic'] / t['conservative']:.0f}× — that gap is the uncertainty. Recomputed daily; not a forecast or a price target.⟫</p>
   </div>"""
 
 
 SCN_ZH = {"conservative": "⟪保守|Conservative⟫", "base": "⟪中間|Base⟫", "optimistic": "⟪樂觀|Optimistic⟫"}
+
+
+def _snap_series() -> dict:
+    """定案時凍結的三條情境路徑（畫「定案後對照」用）。"""
+    f = Path(__file__).resolve().parent.parent / "data" / "scenario_snapshot.json"
+    if not f.exists():
+        return {}
+    sn = json.loads(f.read_text())
+    return {"as_of": sn["as_of"], "dates": sn["dates"], "paths": sn["paths"]}
 
 
 def _scn_status(c: dict) -> str:
@@ -1260,7 +1271,9 @@ def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
         "__HERO_BOTTOM__": _hero("bottom", latest, 0),
         "__MIDTERM__": _midterm(latest),
         "__OG_DESC__": f"⟪{latest['date']}　底部訊號 {latest['bottom_signal']:.0f}・頂部訊號 {latest['top_signal']:.0f}・BTC ${latest['price_usd']:,.0f}。每日更新的比特幣週期訊號。|{latest['date']} · bottom signal {latest['bottom_signal']:.0f} · top signal {latest['top_signal']:.0f} · BTC ${latest['price_usd']:,.0f}. Daily bitcoin cycle signals.⟫",
-        "__SCN__": json.dumps({k: latest["scenarios"][k] for k in ("dates", "paths", "window", "top_date", "as_of")} if latest.get("scenarios") else {}),
+        "__SCN__": json.dumps({**{k: latest["scenarios"][k] for k in ("dates", "paths", "window", "top_date", "as_of")},
+                               "snap": _snap_series(), "tol": ((latest["scenarios"].get("tracking") or {}).get("range") or {}).get("tolerance", .2)}
+                              if latest.get("scenarios") else {}),
         "__STRATEGY__": _strategy(latest),
         "__STRAT_TRADES__": json.dumps({**{k: [t["date"] for t in latest.get("strategy", {}).get("trades", []) if t["action"] == k] for k in ("sell", "buy")},
                                         # 各起點 1 月 1 日的精確基準（圖表資料一年前為每週一點）
@@ -2344,7 +2357,7 @@ const D=__DATA__,IND=__IND__,TOPS=__TOPS__,BOTTOMS=__BOTTOMS__,CUR_LOW=__CUR_LOW
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const TS=D.d.map(d=>Date.parse(d));  /* 橫軸依實際日期（資料一年前每週一點、最近一年每日一點） */
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const st={fut:{hover:null},strat:{years:2014,hover:null},mid:{years:2,hover:null},main:{years:0,hover:null,hide:new Set(),p:0},ind:{years:0,hover:null,k:null},mode:'top',modeApplied:null};
+const st={fut:{hover:null,years:0},strat:{years:2014,hover:null},mid:{years:2,hover:null},main:{years:0,hover:null,hide:new Set(),p:0},ind:{years:0,hover:null,k:null},mode:'top',modeApplied:null};
 function i0of(y){if(!y)return 0;const c=new Date(D.d[D.d.length-1]);c.setFullYear(c.getFullYear()-y);const s=c.toISOString().slice(0,10);return Math.max(0,D.d.findIndex(x=>x>=s));}
 function niceTicks(lo,hi){const span=hi-lo,step=10**Math.floor(Math.log10(span/3)),m=[1,2,5,10].find(k=>span/(k*step)<=5)*step,out=[];for(let v=Math.ceil(lo/m)*m;v<=hi;v+=m)out.push(+v.toFixed(10));return out;}
 function short(v){const a=Math.abs(v);return a>=1e6?(v/1e6)+'M':a>=1e3?(v/1e3)+'k':+v.toFixed(3)+'';}
@@ -2422,11 +2435,45 @@ function drawStrat(){const el=$('#c-strat');if(!el||!D.seq)return;const s=st.str
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),f=v=>v==null?'—':(v>=100?Math.round(v).toLocaleString():v.toFixed(2))+'×';
   $('#tip-strat').innerHTML=`<b>${D.d[j]}</b><span>⟪策略|Strategy⟫ <b>${f(a[j])}</b></span><span>⟪分批版|Batch⟫ <b>${f(c[j])}</b></span><span>⟪防提前見頂|Early-top⟫ <b>${f(e[j])}</b></span><span>⟪持有|Hold⟫ <b>${f(b[j])}</b></span>${al.some(x=>D.d[j]>=x.from&&(!x.to||D.d[j]<=x.to))?'<span class="tip-al">⟪警戒中|On alert⟫</span>':''}<span>${D.p[j]==null?'':'$'+Math.round(D.p[j]).toLocaleString()}</span>`;}
 /* 未來情境圖：2022 起的實際價格＋三條情境路徑（對數刻度、依日期） */
-function drawFut(){const el=$('#c-fut');if(!el||!SCN.dates)return;const W=el.clientWidth;if(!W)return;const H=chartH(300,.5);el.setAttribute('height',H);
-  const L=48,R=innerWidth>=900?96:62,T=14,B=24,DAY=864e5,hs=D.d.findIndex(x=>x>='2022-01-01');
-  const hist=D.d.slice(hs).map((d,i)=>[Date.parse(d),D.p[hs+i]]).filter(v=>v[1]!=null),fd=SCN.dates.map(Date.parse);
+/* 定案後對照：凍結的三條路徑、提醒範圍帶（保守 −20% ～ 樂觀 +20%）與實際價格，時間軸放大到定案日前後 */
+function drawFutSnap(el,W,H){const S=SCN.snap;if(!S||!S.dates)return false;
+  const L=56,R=innerWidth>=900?110:70,T=14,B=24,DAY=864e5,tol=SCN.tol||.2,sd=S.dates.map(Date.parse),s0=sd[0];
+  let li=D.p.length-1;while(li>0&&D.p[li]==null)li--;const today=Date.parse(D.d[li]);
+  const t0=s0-45*DAY,t1=Math.max(today+120*DAY,s0+180*DAY);
   const K=[['conservative','--s-cold','⟪保守|Cons.⟫'],['base','--strat','⟪中間|Base⟫'],['optimistic','--topline','⟪樂觀|Opt.⟫']];
-  const t0=hist[0][0],t1=Date.parse(SCN.window.to)+60*DAY,vals=[...hist.map(v=>v[1]),...K.flatMap(k=>SCN.paths[k[0]])];
+  const fv=(k,t)=>{const a=S.paths[k];if(t<=sd[0])return a[0];for(let i=1;i<sd.length;i++)if(t<=sd[i]){const w=(t-sd[i-1])/(sd[i]-sd[i-1]);return Math.exp(Math.log(a[i-1])+w*(Math.log(a[i])-Math.log(a[i-1])));}return a[a.length-1];};
+  const hist=D.d.map((d,i)=>[Date.parse(d),D.p[i]]).filter(v=>v[1]!=null&&v[0]>=t0&&v[0]<=today);
+  const ts=[];for(let t=s0;t<=t1;t+=3*DAY)ts.push(t);
+  const lowB=ts.map(t=>fv('conservative',t)*(1-tol)),upB=ts.map(t=>fv('optimistic',t)*(1+tol));
+  const vals=[...hist.map(v=>v[1]),...lowB,...upB],lo=Math.log10(Math.min(...vals)*.95),hi=Math.log10(Math.max(...vals)*1.04);
+  const x=t=>L+(W-L-R)*(t-t0)/(t1-t0),y=v=>T+(H-T-B)*(1-(Math.log10(v)-lo)/(hi-lo)),grid=css('--line'),mut=css('--faint');
+  let g=`<defs><clipPath id="clip-fut"><rect x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}"/></clipPath></defs>`;
+  let tk=[3e4,4e4,5e4,6e4,7e4,8e4,9e4,1e5,1.2e5,1.4e5,1.6e5,1.8e5,2e5,2.5e5,3e5].filter(v=>Math.log10(v)>=lo&&Math.log10(v)<=hi);if(tk.length>6)tk=tk.filter((_,i)=>i%2==0);
+  tk.forEach(v=>{g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${grid}"/><text x="${L-6}" y="${y(v)+4}" font-size="11" text-anchor="end" fill="${mut}">${v/1e3}k</text>`;});
+  const step=W<640?2:1;for(let d=new Date(t0),k=0;d.getTime()<=t1;d.setUTCMonth(d.getUTCMonth()+1)){const t=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1);if(t>t0&&t<t1&&(k++%step==0))g+=`<text x="${x(t)}" y="${H-6}" font-size="11" text-anchor="middle" fill="${mut}">${new Date(t).toISOString().slice(0,7)}</text>`;}
+  g+='<g clip-path="url(#clip-fut)">';
+  g+=`<path d="${ts.map((t,i)=>(i?'L':'M')+x(t).toFixed(1)+','+y(upB[i]).toFixed(1)).join('')}${ts.slice().reverse().map((t,i)=>'L'+x(t).toFixed(1)+','+y(lowB[ts.length-1-i]).toFixed(1)).join('')}Z" fill="${css('--mut')}" opacity=".10"/>`;
+  [lowB,upB].forEach(a=>{g+=`<path d="${ts.map((t,i)=>(i?'L':'M')+x(t).toFixed(1)+','+y(a[i]).toFixed(1)).join('')}" fill="none" stroke="${mut}" stroke-dasharray="2 4" stroke-width="1.2"/>`;});
+  K.forEach(([k,c])=>{g+=`<path d="${ts.map((t,i)=>(i?'L':'M')+x(t).toFixed(1)+','+y(fv(k,t)).toFixed(1)).join('')}" fill="none" stroke="${css(c)}" stroke-width="2" stroke-dasharray="6 5" stroke-linecap="round" opacity=".9"/>`;});
+  g+=`<path d="${hist.map((v,i)=>(i?'L':'M')+x(v[0]).toFixed(1)+','+y(v[1]).toFixed(1)).join('')}" fill="none" stroke="${css('--fg')}" stroke-width="1.9" stroke-linejoin="round"/></g>`;
+  [[s0,'⟪定案 |Snapshot ⟫'+S.as_of.slice(5),'end',-4],[today,'⟪今天|Today⟫','start',4]].forEach(([t,lb,an,dx])=>{g+=`<line x1="${x(t)}" x2="${x(t)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" stroke-dasharray="2 4" opacity=".4"/><text x="${x(t)+dx}" y="${T+12}" font-size="11" text-anchor="${an}" fill="${mut}">${lb}</text>`;});
+  const pe=hist.length?hist[hist.length-1][1]:null;if(pe)g+=`<circle cx="${x(today)}" cy="${y(pe)}" r="4" fill="${css('--fg')}"/>`;
+  K.forEach(([k,c,n])=>{const v=fv(k,t1);g+=`<text x="${W-R+6}" y="${y(v)+4}" font-size="11" font-weight="600" fill="${css(c)}">${n}</text>`;});
+  g+=`<text x="${W-R+6}" y="${y(upB[upB.length-1])+4}" font-size="10.5" fill="${mut}">+${Math.round(tol*100)}%</text><text x="${W-R+6}" y="${y(lowB[lowB.length-1])+4}" font-size="10.5" fill="${mut}">−${Math.round(tol*100)}%</text>`;
+  const h=st.fut.hover;let tip;
+  if(h!=null&&h>=t0){g+=`<line x1="${x(h)}" x2="${x(h)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" opacity=".3"/>`;
+    const dd=new Date(h).toISOString().slice(0,10);let px=null;if(h<=today&&hist.length){const v=hist.reduce((a,b)=>Math.abs(b[0]-h)<Math.abs(a[0]-h)?b:a);px=v[1];}
+    tip=`<b>${dd}</b>`+(px?`<span>⟪實際|Actual⟫ <b>$${Math.round(px).toLocaleString()}</b></span>`:'')+(h>=s0?K.map(([k,c,n])=>{const v=fv(k,h);return `<span>${n} <b>$${Math.round(v).toLocaleString()}</b>${px?` (${px>=v?'+':'−'}${Math.abs((px/v-1)*100).toFixed(1)}%)`:''}</span>`;}).join(''):'');}
+  else tip=`<b>⟪定案後對照|Since snapshot⟫</b><span>⟪實線是實際價格，虛線是 |Solid: actual price; dashed: paths frozen on ⟫${S.as_of}⟪ 凍結的路徑，灰色帶是提醒範圍| ; grey band: warning range⟫</span>`;
+  el.innerHTML=g;$('#tip-fut').innerHTML=tip;el.dataset.l=L;el.dataset.r=R;el._x=[t0,t1];return true;}
+function drawFut(){const el=$('#c-fut');if(!el||!SCN.dates)return;const W=el.clientWidth;if(!W)return;const H=chartH(300,.5);el.setAttribute('height',H);
+  if(st.fut.years===1&&drawFutSnap(el,W,H))return;
+  /* 虛線用定案日凍結的路徑（不隨每天價格重畫）；右端圓點是今天重算的頂部估計 */
+  const P=(SCN.snap&&SCN.snap.dates)?SCN.snap:SCN,cur=SCN.paths,curT=Date.parse(SCN.dates[SCN.dates.length-1]);
+  const L=48,R=innerWidth>=900?96:62,T=14,B=24,DAY=864e5,hs=D.d.findIndex(x=>x>='2022-01-01');
+  const hist=D.d.slice(hs).map((d,i)=>[Date.parse(d),D.p[hs+i]]).filter(v=>v[1]!=null),fd=P.dates.map(Date.parse);
+  const K=[['conservative','--s-cold','⟪保守|Cons.⟫'],['base','--strat','⟪中間|Base⟫'],['optimistic','--topline','⟪樂觀|Opt.⟫']];
+  const t0=hist[0][0],t1=Date.parse(SCN.window.to)+60*DAY,vals=[...hist.map(v=>v[1]),...K.flatMap(k=>P.paths[k[0]]),...K.map(k=>cur[k[0]][cur[k[0]].length-1])];
   const lo=Math.log10(Math.min(...vals)*.85),hi=Math.log10(Math.max(...vals)*1.12);
   const x=t=>L+(W-L-R)*(t-t0)/(t1-t0),y=v=>T+(H-T-B)*(1-(Math.log10(v)-lo)/(hi-lo)),grid=css('--line'),mut=css('--faint');
   let g='';
@@ -2434,15 +2481,17 @@ function drawFut(){const el=$('#c-fut');if(!el||!SCN.dates)return;const W=el.cli
   for(let yr=2022;yr<=new Date(t1).getUTCFullYear();yr++){const t=Date.UTC(yr,0,1);if(t>t0&&t<t1)g+=`<text x="${x(t)}" y="${H-6}" font-size="11" text-anchor="middle" fill="${mut}">${yr}</text>`;}
   const wa=Date.parse(SCN.window.from),wb=Date.parse(SCN.window.to);
   g+=`<rect x="${x(wa)}" y="${T}" width="${x(wb)-x(wa)}" height="${H-T-B}" fill="${css('--a3')}" opacity=".10"/><text x="${(x(wa)+x(wb))/2}" y="${H-B-6}" font-size="11" text-anchor="middle" fill="${mut}">⟪頂部窗口|Top window⟫</text>`;
-  const now=fd[0];g+=`<line x1="${x(now)}" x2="${x(now)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" stroke-dasharray="2 4" opacity=".4"/><text x="${x(now)+4}" y="${H-B-6}" font-size="11" fill="${mut}">⟪今天|Today⟫</text>`;
+  const now=Date.parse(SCN.dates[0]),snapT=fd[0];
+  if(P!==SCN)g+=`<line x1="${x(snapT)}" x2="${x(snapT)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" stroke-dasharray="1 3" opacity=".25"/>`;
+  g+=`<line x1="${x(now)}" x2="${x(now)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" stroke-dasharray="2 4" opacity=".4"/><text x="${x(now)+4}" y="${H-B-6}" font-size="11" fill="${mut}">⟪今天|Today⟫</text>`;
   g+=`<path d="${hist.map((v,i)=>(i?'L':'M')+x(v[0]).toFixed(1)+','+y(v[1]).toFixed(1)).join('')}" fill="none" stroke="${css('--fg')}" stroke-width="1.6" stroke-linejoin="round"/>`;
-  K.forEach(([k,c,n])=>{const a=SCN.paths[k],e=a[a.length-1];g+=`<path d="${a.map((v,i)=>(i?'L':'M')+x(fd[i]).toFixed(1)+','+y(v).toFixed(1)).join('')}" fill="none" stroke="${css(c)}" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round"/>`;
-    g+=`<circle cx="${x(fd[fd.length-1])}" cy="${y(e)}" r="4" fill="${css(c)}"/><text x="${x(fd[fd.length-1])+8}" y="${y(e)+4}" font-size="11.5" font-weight="600" fill="${css(c)}">${n} $${Math.round(e/1e3)}k</text>`;});
+  K.forEach(([k,c,n])=>{const a=P.paths[k],e=cur[k][cur[k].length-1];g+=`<path d="${a.map((v,i)=>(i?'L':'M')+x(fd[i]).toFixed(1)+','+y(v).toFixed(1)).join('')}" fill="none" stroke="${css(c)}" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round"/>`;
+    g+=`<circle cx="${x(curT)}" cy="${y(e)}" r="4.5" fill="${css(c)}" stroke="${css('--bg')}" stroke-width="1.5"/><text x="${x(curT)+8}" y="${y(e)+4}" font-size="11.5" font-weight="600" fill="${css(c)}">${n} $${Math.round(e/1e3)}k</text>`;});
   const h=st.fut.hover;let tip;
   if(h!=null){g+=`<line x1="${x(h)}" x2="${x(h)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" opacity=".3"/>`;
     if(h<=now){const v=hist.reduce((a,b)=>Math.abs(b[0]-h)<Math.abs(a[0]-h)?b:a);tip=`<b>${new Date(v[0]).toISOString().slice(0,10)}</b><span>$${Math.round(v[1]).toLocaleString()}</span>`;}
-    else{let j=0;fd.forEach((t,i)=>{if(Math.abs(t-h)<Math.abs(fd[j]-h))j=i;});tip=`<b>${SCN.dates[j]}</b>`+K.map(([k,c,n])=>`<span>${n} <b>$${Math.round(SCN.paths[k][j]).toLocaleString()}</b></span>`).join('');
-      K.forEach(([k,c])=>{g+=`<circle cx="${x(fd[j])}" cy="${y(SCN.paths[k][j])}" r="4" fill="${css(c)}" stroke="${css('--surface')}" stroke-width="2"/>`;});}}
+    else{let j=0;fd.forEach((t,i)=>{if(Math.abs(t-h)<Math.abs(fd[j]-h))j=i;});tip=`<b>${P.dates[j]}</b>`+K.map(([k,c,n])=>`<span>${n} <b>$${Math.round(P.paths[k][j]).toLocaleString()}</b></span>`).join('');
+      K.forEach(([k,c])=>{g+=`<circle cx="${x(fd[j])}" cy="${y(P.paths[k][j])}" r="4" fill="${css(c)}" stroke="${css('--surface')}" stroke-width="2"/>`;});}}
   else tip=`<b>${SCN.top_date}</b><span>⟪滑過圖表看各情境路徑|Hover to read each path⟫</span>`;
   el.innerHTML=g;$('#tip-fut').innerHTML=tip;el.dataset.l=L;el.dataset.r=R;el._x=[t0,t1];}
 function drawInd(){const s=st.ind,k=s.k;if(!k)return;const i0=i0of(s.years),v=D['v_'+k],sc=D['s_'+k],m=IND[k];
@@ -2493,7 +2542,7 @@ function openInd(k){const m=IND[k];st.ind={years:0,hover:null,k};
   <div class="tip" id="tip-ind"></div><svg class="chart" id="c-val" height="160" role="img" aria-label="⟪指標數值歷史|Indicator value history⟫"></svg>
   ${D['s_'+k]?'<svg class="chart" id="c-sc" height="120" role="img" aria-label="⟪指標分數歷史|Indicator score history⟫"></svg>':''}`,()=>{bindSeg();bind([$('#c-val'),$('#c-sc')],'ind',()=>i0of(st.ind.years),drawInd);drawInd();});}
 $$('.ind').forEach(b=>b.onclick=()=>openInd(b.dataset.k));
-function bindSeg(){$$('.seg').forEach(box=>box.querySelectorAll('button').forEach(b=>b.onclick=()=>{box.querySelectorAll('button').forEach(o=>o.classList.remove('on'));b.classList.add('on');const g=box.dataset.g;st[g].years=+b.dataset.y;st[g].hover=null;g==='main'?animMain():g==='mid'?drawMid():g==='strat'?drawStrat():drawInd();}));}
+function bindSeg(){$$('.seg').forEach(box=>box.querySelectorAll('button').forEach(b=>b.onclick=()=>{box.querySelectorAll('button').forEach(o=>o.classList.remove('on'));b.classList.add('on');const g=box.dataset.g;st[g].years=+b.dataset.y;st[g].hover=null;g==='main'?animMain():g==='mid'?drawMid():g==='strat'?drawStrat():g==='fut'?drawFut():drawInd();}));}
 $$('#legend-main button').forEach(b=>b.onclick=()=>{const k=b.dataset.s,h=st.main.hide;h.has(k)?h.delete(k):h.add(k);b.classList.toggle('off');drawMain();});
 /* ===== 極光潮汐動效：星空、液態大數字、首屏波浪（只動畫可見的首屏） ===== */
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;

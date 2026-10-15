@@ -141,6 +141,7 @@ MVRV Z-score、NUPL、Puell Multiple、Realized Price 倍數（價格 / 實現�
   不可覆寫或刪除；頁面顯示定案後的策略績效與「實際價格最貼近哪條情境」。
 - 情境：頂部目標不可跟著行情漲跌調整（只隨本輪低點、實現價格、頂部日等結構輸入變動）。走勢偏離提示（`RANGE_TOL` 20%、`RANGE_DAYS` 30）
   與情境變動紀錄 `data/scenario_history.csv`（只新增；明顯變動門檻 `CHANGE_PCT` 3%）在 `btc_top/scenarios.py`。
+  情境圖：「情境全貌」的虛線用定案日凍結的路徑（不隨每天價格重畫），右端圓點為每日重算的頂部；「定案後對照」放大定案日前後，畫凍結路徑、提醒範圍帶與實際價格。
 
 ## 輸出
 - `top_signal`：頂部訊號（主要數字）；`signal_level`：`none` / `window`（≥ 50）/ `alert`（≥ 70）
