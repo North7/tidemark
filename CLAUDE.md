@@ -27,7 +27,7 @@
 - 同一指標全站只能有一個數字：數據表包含今天這一列（價格未收盤顯示「—」）；中期狀態的恐懼貪婪、資金費率最新一列用各自最新值。
 
 ## 技術架構
-- Python 3.11+，套件：pandas、requests、numpy（必要時再加）
+- Python 3.11+，套件：pandas、requests、numpy（必要時再加）；requirements.txt 設版本上限（如 pandas<4），升級前先在本機測試再放寬
 - 每日由 GitHub Actions 排程執行（UTC 00:15，在每日報告 00:40 之前完成）
   主要觸發：外部 cron-job.org 每天 UTC 00:15 呼叫 workflow_dispatch（GitHub 排程實測延遲約 5 小時）。
   權杖為 fine-grained PAT（只限本倉庫、Actions 讀寫），只存在 cron-job.org，不寫入倉庫。
@@ -177,6 +177,7 @@ MVRV Z-score、NUPL、Puell Multiple、Realized Price 倍數（價格 / 實現�
 - 首屏：頂部模式為「漲潮」波浪（湍急、隨訊號變大）；底部模式為「退潮・深海」（低緩湧浪＋往上浮的氣泡，數量隨底部訊號增加）。
   兩張波浪 SVG 的漸層／遮罩 id 必須各自加模式前綴（共用 id 會引用到被隱藏的那張而整個不顯示）。
   「潮汐筆記」一句話概述由 `_tide_note()` 依當日數據挑句型（中英雙語），只描述數據、不做預測。
+- 百分位指標歷史不到一年（目前只有未平倉量，2026-04 起）時，卡片與詳情標示「歷史僅約 N 個月」，計分不變（`_short_hist()`）。
 - 介面細節（2026-10-07）：小字至少 12px；手機往下捲收起頁首；回到頂部按鈕；週期策略頁內跳轉；手機圖表長按才顯示數值；
   時機條的點與色帶可滑過／點擊看說明並附圖例；數據表分數格依數值加底色；分享按鈕（手機系統分享選單、電腦複製目前分頁連結）；
   每日分享預覽圖 docs/og.png（`btc_top/ogimage.py`，Pillow＋btc_top/assets/Archivo.ttf，OFL）。

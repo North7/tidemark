@@ -140,12 +140,25 @@ def _method(i):
     if m == "cycle":
         return f"⟪週期法：本輪下界|Cycle method: this cycle's floor⟫ {_fmt(i.get('bottom_bound'))} → ⟪預期頂部|expected top⟫ {_fmt(i.get('expected_top'))}"
     if m == "percentile":
-        p = i.get("percentile")
+        p, mo = i.get("percentile"), _short_hist(i)
+        if mo and p is not None:  # 歷史不到一年：百分位只跟這段期間比，不是 4 年
+            return (f"⟪百分位 {p:.0f}%（歷史僅約 {mo} 個月，只跟這段期間比較；累積滿一年前分數僅供參考，計分方式不變）|"
+                    f"Percentile {p:.0f}% (only ~{mo} months of history, so it is ranked against that period alone; "
+                    f"treat the score as tentative until a year of data builds up — scoring is unchanged)⟫"
+                    f"⟪，超過 {PCT_PIVOT}% 才開始計分|; scores only above {PCT_PIVOT}%⟫")
         return (f"⟪4 年百分位|4-yr percentile⟫ {p:.0f}%" if p is not None else "⟪百分位（資料累積中）|Percentile (collecting data)⟫") + f"⟪，超過 {PCT_PIVOT}% 才開始計分|; scores only above {PCT_PIVOT}%⟫"
     return ""
 
 
+def _short_hist(i):
+    """百分位指標的歷史不到一年時回傳約幾個月，否則 None。"""
+    d = i.get("history_days")
+    return max(d // 30, 1) if i.get("method") == "percentile" and d and d < 365 else None
+
+
 def _method_short(i):
+    if mo := _short_hist(i):
+        return f"⟪百分位・歷史僅約 {mo} 個月|Percentile · only ~{mo} mo of history⟫"
     return {"cycle": "⟪週期法|Cycle method⟫", "percentile": "⟪4 年百分位|4-yr percentile⟫"}.get(i.get("method"), "")
 
 

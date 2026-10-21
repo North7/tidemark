@@ -1,6 +1,7 @@
-pandas>=2.1
-numpy>=1.26
-requests>=2.31
-lxml>=5.0
-pillow>=10.0
-opencc-python-reimplemented>=0.1.7
+# 設版本上限：避免大改版（例如 pandas 4）在雲端被自動安裝而讓每日更新突然失敗；升級時先在本機測試再放寬
+pandas>=3.0,<4
+numpy>=2.0,<3
+requests>=2.31,<3
+lxml>=5.0,<7
+pillow>=10.0,<14
+opencc-python-reimplemented>=0.1.7,<0.2

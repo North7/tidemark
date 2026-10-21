@@ -43,7 +43,9 @@ def main():
         return
     latest = json.loads((DOCS / "latest.json").read_text())
     events = latest.get("events") or []
-    _, warnings = run_checks()
+    # 只通知「新出現」的警告（run.py 已與前一次比較過），同一問題持續數天不會每天重複發送
+    health = latest.get("health")
+    warnings = health.get("new_warnings", []) if health else run_checks()[1]
     if not events and not warnings:
         print("今天沒有需要通知的事件")
         return

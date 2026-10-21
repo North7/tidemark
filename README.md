@@ -243,7 +243,7 @@ Reserve Risk、RHODL、SSR 震盪指標、清算熱圖、選擇權。
 | | 穩定幣總供給 90 日增速 | DefiLlama | 百分位 |
 | | Coinbase 溢價（7 日均） | Coinbase BTC-USD ÷ OKX BTC-USDT | 百分位 |
 | 槓桿與衍生品（15%） | 資金費率 7 日均（年化） | Binance（2019 起歷史），每日更新用 OKX | 百分位 |
-| | 未平倉量 / 市值 | OKX（全市場 BTC 合約），Binance 備援 | 百分位 |
+| | 未平倉量 / 市值 | OKX（全市場 BTC 合約），Binance 備援；免費歷史只從 2026-04 起，滿一年前頁面標示「歷史僅約 N 個月」、分數僅供參考 | 百分位 |
 | | 期現基差（年化） | Binance 當季合約 K 線（2021 起歷史），每日更新用 OKX | 百分位 |
 | 情緒（10%） | 恐懼貪婪指數（7 日均） | alternative.me | 百分位 |
 | 時機 | 距減半天數、距本輪週期低點天數 | 固定日期、Coin Metrics 價格 | 時間窗口 |
@@ -307,7 +307,7 @@ Reserve Risk、RHODL、SSR 震盪指標、清算熱圖、選擇權。
   資料落後超過 3 天才算過期；ETF 只算美股交易日（週末與假日沒有資料不算過期）。
 - **自動檢查**（`python -m btc_top.checks`）：必要欄位、數值範圍、未替換的佔位符、英文頁殘留中文、簡體頁殘留繁體字等。有錯誤就停止、不更新網站。
 - **通知**（`btc_top/events.py`、`btc_top/notify.py`）：偵測訊號換級、策略警戒與買賣、週線 Supertrend 翻轉、週期結構判定、
-  權杖到期提醒與更新失敗，透過 LINE 官方帳號 Messaging API 推播（金鑰放 GitHub Secrets：`LINE_CHANNEL_TOKEN`、`LINE_USER_ID`；未設定時只記錄不發送）。
+  權杖到期提醒與更新失敗，透過 LINE 官方帳號 Messaging API 推播（金鑰放 GitHub Secrets：`LINE_CHANNEL_TOKEN`、`LINE_USER_ID`；未設定時只記錄不發送）。資料警告只在新出現時通知，同一問題持續數天不會每天重複。
 - GitHub Pages 從 main 分支的 `/docs` 發布。
 - 流量統計：GoatCounter（無 Cookie、不收集個人資料），每個分頁與模式各自計數。
 
