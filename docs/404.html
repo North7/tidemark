@@ -9,7 +9,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
-<script>try { var t = localStorage.getItem('lab.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>
+try { var t = localStorage.getItem('lab.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+// 語言跟 Aron Lab 首頁同一套：網址的 ?lang= → 自己選過的 → 瀏覽器語言
+(function () {
+  var q = new URLSearchParams(location.search).get('lang'), s = null, h = document.documentElement;
+  try { s = localStorage.getItem('lab.lang'); } catch (e) {}
+  var l = q === 'en' || q === 'zh' ? q : s === 'en' || s === 'zh' ? s : [].concat(navigator.languages || navigator.language || []).some(function (x) { return /^zh/i.test(x); }) ? 'zh' : 'en';
+  h.dataset.lang = l; if (l === 'en') { h.lang = 'en'; document.title = 'Page not found · Aron Lab'; }
+})();
+</script>
 <style>
 /* 404：沿用首頁的色場，只是最裡面那一格是空的。GitHub Pages 會在任何打錯的網址底下送出這頁，所以路徑一律從根目錄寫。
    原檔在 North7/north7.github.io；同一份也複製到各作品的 repo（daybreak、tidemark/docs、morningbell、market-ticker/public、signals/paper/web、portfolio），改的話一起更新。 */
@@ -60,26 +69,40 @@ h1 { margin: 16px 0 0; font: 900 clamp(38px, 5vw, 72px)/1.1 var(--cjk); color: v
   <div class="stage" aria-hidden="true"><div class="sq s1"><div class="sq s2"><div class="sq s3"></div></div></div></div>
   <div>
     <p class="k">404 · Homage to the Missing Page</p>
-    <h1>這一格是空的。</h1>
-    <p class="lead">找不到 <code id="path"></code>，可能是網址打錯了，或這一頁已經搬家。</p>
+    <h1 id="h1">這一格是空的。</h1>
+    <p class="lead" id="lead">找不到 <code id="path"></code>，可能是網址打錯了，或這一頁已經搬家。</p>
     <p class="hint" id="hint" hidden></p>
-    <form class="search" action="/" method="get" role="search"><input name="q" type="search" placeholder="搜尋所有入口…" aria-label="搜尋所有入口" autocomplete="off"><button type="submit">搜尋</button></form>
+    <form class="search" action="/" method="get" role="search"><input id="q" name="q" type="search" placeholder="搜尋所有入口…" aria-label="搜尋所有入口" autocomplete="off"><button type="submit" id="go">搜尋</button></form>
     <ul class="prods" id="prods" aria-label="所有作品"></ul>
-    <a class="home" href="/">回 Aron Lab 首頁 →</a>
+    <a class="home" id="home" href="/">回 Aron Lab 首頁 →</a>
   </div>
 </main>
 <script src="/data/lab.js"></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
+  const EN = document.documentElement.dataset.lang === 'en';
+  const tr = (zh, en) => (EN ? en : zh);
   let path = location.pathname;
   try { path = decodeURIComponent(path); } catch (e) { /* 網址裡有不完整的編碼就照原樣顯示 */ }
+  if (EN) {
+    $('h1').textContent = 'This square is empty.';
+    $('lead').innerHTML = 'Couldn’t find <code id="path"></code>. The address may be mistyped, or the page has moved.';
+    $('q').placeholder = 'Search all entries…'; $('q').setAttribute('aria-label', 'Search all entries');
+    $('go').textContent = 'Search';
+    $('prods').setAttribute('aria-label', 'All works');
+    $('home').textContent = 'Back to Aron Lab →'; $('home').href = '/?lang=en';
+    document.querySelector('.search').insertAdjacentHTML('beforeend', '<input type="hidden" name="lang" value="en">');
+  }
   $('path').textContent = path;
   const L = window.LAB; if (!L) return;
+  const sub = (p) => (EN && p.en && p.en.zh) || p.zh;
   const P = L.products;
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const caseUrl = (p) => { const c = p.links.find((l) => l.type === 'case'); return c ? new URL(c.u, p.site || location.origin + '/').href : null; };
   const mainUrl = (p) => p.site || caseUrl(p);
+  // 英文版：有自己英文網址的作品（例如 Tidemark 的 en/）直接連過去
+  const home = (p) => (EN && p.en && p.en.open ? new URL(p.en.open, p.site).href : mainUrl(p));
   const setColor = (c) => document.body.style.setProperty('--pc', c);
 
   // 網址裡哪一段跟哪個作品像（打錯一兩個字也算），就問「你要找的是它嗎？」；越深的那一段越具體，優先採用
@@ -93,9 +116,9 @@ h1 { margin: 16px 0 0; font: 900 clamp(38px, 5vw, 72px)/1.1 var(--cjk); color: v
     const name = p.name.toLowerCase();
     const keys = [p.id, name.replace(/\s+/g, '-'), name.replace(/\s+/g, '')];
     if (p.site) keys.push(new URL(p.site).pathname.split('/').filter(Boolean)[0]);
-    return { keys, url: mainUrl(p), color: p.color, label: `${p.name} ${p.zh}` };
+    return { keys, url: home(p), color: p.color, label: `${p.name} ${sub(p)}` };
   });
-  if (L.owner.portfolio) cands.push({ keys: ['portfolio', 'resume'], url: L.owner.portfolio, color: '#8A8A8A', label: `${L.owner.name} 個人主頁` });
+  if (L.owner.portfolio) cands.push({ keys: ['portfolio', 'resume'], url: L.owner.portfolio, color: '#8A8A8A', label: tr(`${L.owner.name} 個人主頁`, `${L.owner.name} homepage`) });
   let best = null;
   path.toLowerCase().split('/').filter(Boolean).forEach((seg, si) => cands.forEach((c) => {
     const d = Math.min(...c.keys.filter(Boolean).map((k) => lev(seg, k)));
@@ -105,11 +128,12 @@ h1 { margin: 16px 0 0; font: 900 clamp(38px, 5vw, 72px)/1.1 var(--cjk); color: v
   setColor(base);
   if (best) {
     $('hint').hidden = false;
-    $('hint').innerHTML = `你要找的是 <a href="${best.c.url}"><i></i>${esc(best.c.label)}</a> 嗎？`;
+    const a = `<a href="${best.c.url}"><i></i>${esc(best.c.label)}</a>`;
+    $('hint').innerHTML = tr(`你要找的是 ${a} 嗎？`, `Looking for ${a}?`);
   }
 
   // 所有作品；滑過去，方形就換成那個作品的顏色
-  $('prods').innerHTML = P.filter(mainUrl).map((p) => `<li><a href="${mainUrl(p)}" data-c="${p.color}"><i style="background:${p.color}"></i>${esc(p.name)}<small>${esc(p.zh)}</small></a></li>`).join('');
+  $('prods').innerHTML = P.filter(mainUrl).map((p) => `<li><a href="${home(p)}" data-c="${p.color}"><i style="background:${p.color}"></i>${esc(p.name)}<small>${esc(sub(p))}</small></a></li>`).join('');
   const hover = (e) => { const a = e.target.closest('[data-c]'); setColor(a ? a.dataset.c : base); };
   $('prods').addEventListener('mouseover', hover);
   $('prods').addEventListener('focusin', hover);
