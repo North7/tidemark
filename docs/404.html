@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>找不到這一頁 · Aron Lab</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<script>try { var t = localStorage.getItem('lab.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<style>
+/* 404：沿用首頁的色場，只是最裡面那一格是空的。GitHub Pages 會在任何打錯的網址底下送出這頁，所以路徑一律從根目錄寫。
+   原檔在 North7/north7.github.io；同一份也複製到各作品的 repo（daybreak、tidemark/docs、morningbell、market-ticker/public、signals/paper/web、portfolio），改的話一起更新。 */
+:root { --base: #F4F1EA; --deep: #0E0E0E; --tx: #161616; --tx2: rgba(22,22,22,.68); --line: rgba(22,22,22,.16); --geo: 'Jost', 'Noto Sans TC', system-ui, sans-serif; --cjk: 'Noto Sans TC', system-ui, sans-serif; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --base: #141414; --deep: #FFFFFF; --tx: #F1EEE7; --tx2: rgba(241,238,231,.7); --line: rgba(241,238,231,.18); color-scheme: dark; } }
+:root[data-theme="dark"] { --base: #141414; --deep: #FFFFFF; --tx: #F1EEE7; --tx2: rgba(241,238,231,.7); --line: rgba(241,238,231,.18); color-scheme: dark; }
+* { box-sizing: border-box; }
+.pc { --t1: color-mix(in oklab, var(--pc) 20%, var(--base)); --t2: color-mix(in oklab, var(--pc) 52%, var(--base)); --t3: var(--pc); --t4: color-mix(in oklab, var(--pc) 62%, var(--deep)); }
+body { --pc: #8A8A8A; margin: 0; min-height: 100svh; background: var(--t1); color: var(--tx); font: 400 16px/1.7 var(--cjk); -webkit-font-smoothing: antialiased; transition: background-color .8s cubic-bezier(.4,0,.2,1); }
+a { color: inherit; text-decoration: none; }
+.top { display: flex; align-items: center; height: 60px; padding: 0 28px; }
+.brand { display: flex; align-items: center; gap: 12px; font: 700 17px/1 var(--geo); letter-spacing: .16em; }
+.brand i { width: 16px; height: 16px; background: var(--t4); transition: background-color .8s; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 6vw; min-height: calc(100svh - 60px); padding: 20px 6vw 60px; }
+.stage { width: min(60vh, 36vw); justify-self: center; }
+.sq { position: relative; aspect-ratio: 1; transition: background-color .8s cubic-bezier(.4,0,.2,1), box-shadow .8s; }
+.sq > .sq { position: absolute; width: 75%; left: 12.5%; top: 18.75%; }
+.s1 { background: var(--t2); } .s2 { background: var(--t3); }
+.s3 { background: var(--t1); box-shadow: inset 0 0 0 2px var(--t4); }
+.k { margin: 0; font: 500 13px/1.2 var(--geo); letter-spacing: .18em; text-transform: uppercase; color: var(--tx2); }
+h1 { margin: 16px 0 0; font: 900 clamp(38px, 5vw, 72px)/1.1 var(--cjk); color: var(--t4); transition: color .8s; }
+.lead { margin: 18px 0 0; font-size: 17px; }
+.lead code { padding: 2px 8px; background: var(--t2); font: 500 15px/1.4 var(--geo); word-break: break-all; }
+.hint { margin: 14px 0 0; font: 700 19px/1.5 var(--cjk); }
+.hint a { display: inline-flex; align-items: center; gap: 8px; border-bottom: 2px solid currentColor; }
+.hint a i { width: 12px; height: 12px; background: var(--t3); }
+.search { display: flex; max-width: 460px; margin-top: 26px; }
+.search input { flex: 1; min-width: 0; height: 50px; padding: 0 16px; border: 0; outline: 0; background: var(--base); color: var(--tx); font: 500 16px/1 var(--cjk); }
+.search button { height: 50px; padding: 0 20px; border: 0; background: var(--tx); color: var(--base); font: 700 15px/1 var(--cjk); cursor: pointer; }
+.prods { display: flex; flex-wrap: wrap; gap: 2px; margin: 26px 0 0; padding: 0; list-style: none; }
+.prods a { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; background: color-mix(in oklab, var(--base) 55%, transparent); font: 600 14px/1 var(--geo); }
+.prods a:hover, .prods a:focus-visible { background: var(--base); }
+.prods i { width: 10px; height: 10px; }
+.prods small { font: 500 12px/1 var(--cjk); color: var(--tx2); }
+.home { display: inline-block; margin-top: 28px; font: 700 16px/1 var(--cjk); border-bottom: 2px solid currentColor; padding-bottom: 4px; }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 2px; }
+@media (max-width: 860px) {
+  .top { padding: 0 20px; height: 54px; }
+  main { grid-template-columns: minmax(0, 1fr); gap: 34px; padding: 16px 20px 56px; }
+  .stage { width: min(64vw, 40svh); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body class="pc">
+<header class="top"><a class="brand" href="/"><i aria-hidden="true"></i>ARON LAB</a></header>
+<main>
+  <div class="stage" aria-hidden="true"><div class="sq s1"><div class="sq s2"><div class="sq s3"></div></div></div></div>
+  <div>
+    <p class="k">404 · Homage to the Missing Page</p>
+    <h1>這一格是空的。</h1>
+    <p class="lead">找不到 <code id="path"></code>，可能是網址打錯了，或這一頁已經搬家。</p>
+    <p class="hint" id="hint" hidden></p>
+    <form class="search" action="/" method="get" role="search"><input name="q" type="search" placeholder="搜尋所有入口…" aria-label="搜尋所有入口" autocomplete="off"><button type="submit">搜尋</button></form>
+    <ul class="prods" id="prods" aria-label="所有作品"></ul>
+    <a class="home" href="/">回 Aron Lab 首頁 →</a>
+  </div>
+</main>
+<script src="/data/lab.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let path = location.pathname;
+  try { path = decodeURIComponent(path); } catch (e) { /* 網址裡有不完整的編碼就照原樣顯示 */ }
+  $('path').textContent = path;
+  const L = window.LAB; if (!L) return;
+  const P = L.products;
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const caseUrl = (p) => { const c = p.links.find((l) => l.type === 'case'); return c ? new URL(c.u, p.site || location.origin + '/').href : null; };
+  const mainUrl = (p) => p.site || caseUrl(p);
+  const setColor = (c) => document.body.style.setProperty('--pc', c);
+
+  // 網址裡哪一段跟哪個作品像（打錯一兩個字也算），就問「你要找的是它嗎？」；越深的那一段越具體，優先採用
+  const lev = (a, b) => {
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+  };
+  const cands = P.filter(mainUrl).map((p) => {
+    const name = p.name.toLowerCase();
+    const keys = [p.id, name.replace(/\s+/g, '-'), name.replace(/\s+/g, '')];
+    if (p.site) keys.push(new URL(p.site).pathname.split('/').filter(Boolean)[0]);
+    return { keys, url: mainUrl(p), color: p.color, label: `${p.name} ${p.zh}` };
+  });
+  if (L.owner.portfolio) cands.push({ keys: ['portfolio', 'resume'], url: L.owner.portfolio, color: '#8A8A8A', label: `${L.owner.name} 個人主頁` });
+  let best = null;
+  path.toLowerCase().split('/').filter(Boolean).forEach((seg, si) => cands.forEach((c) => {
+    const d = Math.min(...c.keys.filter(Boolean).map((k) => lev(seg, k)));
+    if (d <= Math.max(2, Math.floor(seg.length / 4)) && (!best || si > best.si || (si === best.si && d < best.d))) best = { c, d, si };
+  }));
+  const base = best ? best.c.color : P[Math.floor(Math.random() * P.length)].color;
+  setColor(base);
+  if (best) {
+    $('hint').hidden = false;
+    $('hint').innerHTML = `你要找的是 <a href="${best.c.url}"><i></i>${esc(best.c.label)}</a> 嗎？`;
+  }
+
+  // 所有作品；滑過去，方形就換成那個作品的顏色
+  $('prods').innerHTML = P.filter(mainUrl).map((p) => `<li><a href="${mainUrl(p)}" data-c="${p.color}"><i style="background:${p.color}"></i>${esc(p.name)}<small>${esc(p.zh)}</small></a></li>`).join('');
+  const hover = (e) => { const a = e.target.closest('[data-c]'); setColor(a ? a.dataset.c : base); };
+  $('prods').addEventListener('mouseover', hover);
+  $('prods').addEventListener('focusin', hover);
+  $('prods').addEventListener('mouseleave', () => setColor(base));
+  $('prods').addEventListener('focusout', () => setColor(base));
+})();
+</script>
+</body>
+</html>
