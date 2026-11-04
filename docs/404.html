@@ -6,6 +6,7 @@
 <title>找不到這一頁 · Aron Lab</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
@@ -31,7 +32,8 @@ body { --pc: #8A8A8A; margin: 0; min-height: 100svh; background: var(--t1); colo
 a { color: inherit; text-decoration: none; }
 .top { display: flex; align-items: center; height: 60px; padding: 0 28px; }
 .brand { display: flex; align-items: center; gap: 12px; font: 700 17px/1 var(--geo); letter-spacing: .16em; }
-.brand i { width: 16px; height: 16px; background: var(--t4); transition: background-color .8s; }
+.brand svg { width: 28px; height: 19px; flex: none; }
+.brand .bar { fill: #F5801C; }  /* Aron 的 logo：A 用文字色，橫槓是品牌橘 */
 main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 6vw; min-height: calc(100svh - 60px); padding: 20px 6vw 60px; }
 .stage { width: min(60vh, 36vw); justify-self: center; }
 .sq { position: relative; aspect-ratio: 1; transition: background-color .8s cubic-bezier(.4,0,.2,1), box-shadow .8s; }
@@ -64,7 +66,7 @@ h1 { margin: 16px 0 0; font: 900 clamp(38px, 5vw, 72px)/1.1 var(--cjk); color: v
 </style>
 </head>
 <body class="pc">
-<header class="top"><a class="brand" href="/"><i aria-hidden="true"></i>ARON LAB</a></header>
+<header class="top"><a class="brand" href="/"><svg viewBox="0 0 478.25 321" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M80.25 0H151.25L231.5 321H176.45L159.05 243H72.45L55.05 321H0ZM115.75 48.6L149.15 198.5H82.35Z"/><rect class="bar" x="259.25" y="259" width="219" height="62"/></svg>ARON LAB</a></header>
 <main>
   <div class="stage" aria-hidden="true"><div class="sq s1"><div class="sq s2"><div class="sq s3"></div></div></div></div>
   <div>
