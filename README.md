@@ -7,9 +7,9 @@
 並提供經逐輪回測的「週期策略」、下一個頂部的三種情境推演，以及中期市場狀態。
 用途是在 2028 年減半後的週期（預期頂部 2029–2030）辨識頂部區，並追蹤本輪底部是否成立。**僅供參考，不構成投資建議，不含任何交易功能。**
 
-- 儀表板：`https://north7.github.io/tidemark/`
-- 當日數據：`https://north7.github.io/tidemark/latest.json`
-- 簡體中文版：`https://north7.github.io/tidemark/zh-hans/`；英文版：`https://north7.github.io/tidemark/en/`
+- 儀表板：`https://tidemark.aronlab.dev/`
+- 當日數據：`https://tidemark.aronlab.dev/latest.json`
+- 簡體中文版：`https://tidemark.aronlab.dev/zh-hans/`；英文版：`https://tidemark.aronlab.dev/en/`
   （首次依瀏覽器語言自動選擇：簡體地區 → 簡體、其他中文 → 繁體、其他 → 英文；右上角語言選單可切換並記住）
 
 | 頁面 | 內容 |

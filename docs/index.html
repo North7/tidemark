@@ -9,8 +9,8 @@
 <script data-goatcounter="https://tidemark.goatcounter.com/count" data-goatcounter-settings='{"no_onload":true}' async src="https://gc.zgo.at/count.js"></script>
 <meta property="og:type" content="website"><meta property="og:site_name" content="Tidemark">
 <meta property="og:title" content="Tidemark · BTC 週期訊號"><meta property="og:description" content="2026-11-11　底部訊號 30・頂部訊號 0・BTC $73,661。每日更新的比特幣週期訊號。">
-<meta property="og:image" content="https://north7.github.io/tidemark/og.png?v=2026-11-11"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://north7.github.io/tidemark/og.png?v=2026-11-11">
+<meta property="og:image" content="https://tidemark.aronlab.dev/og.png?v=2026-11-11"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://tidemark.aronlab.dev/og.png?v=2026-11-11">
 <meta name="description" content="每日更新的比特幣週期訊號：頂部訊號（熱度 × 時機）與底部訊號（冷度 × 底部時機）。">
 <script>/* 預設深色；使用者選過（dark／light／auto）就沿用 */
 var THEME0='dark';try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'||t==='auto')THEME0=t;}catch(e){}
@@ -20,8 +20,8 @@ var HERE='zh',ROOT='',LP={zh:'',hans:'zh-hans/',en:'en/'};
 try{var L=localStorage.getItem('lang');
   if(!LP.hasOwnProperty(L)){var n=(navigator.language||'').toLowerCase();L=/^zh-(cn|sg|my|hans)/.test(n)?'hans':/^zh/.test(n)?'zh':'en';}
   if(L!==HERE&&!/[?&]nolang/.test(location.search))location.replace(ROOT+LP[L]+(location.protocol==='file:'?'index.html':'')+location.hash);}catch(e){}</script>
-<link rel="alternate" hreflang="zh-Hant" href="https://north7.github.io/tidemark/"><link rel="alternate" hreflang="zh-Hans" href="https://north7.github.io/tidemark/zh-hans/">
-<link rel="alternate" hreflang="en" href="https://north7.github.io/tidemark/en/"><link rel="alternate" hreflang="x-default" href="https://north7.github.io/tidemark/">
+<link rel="alternate" hreflang="zh-Hant" href="https://tidemark.aronlab.dev/"><link rel="alternate" hreflang="zh-Hans" href="https://tidemark.aronlab.dev/zh-hans/">
+<link rel="alternate" hreflang="en" href="https://tidemark.aronlab.dev/en/"><link rel="alternate" hreflang="x-default" href="https://tidemark.aronlab.dev/">
 <meta name="theme-color" content="#0b0d10" id="theme-color">
 <style>
 :root{color-scheme:light;--bg:#f3f4f6;--surface:#fff;--surface2:#f7f8fa;--line:rgba(15,23,42,.08);--line2:rgba(15,23,42,.14);
@@ -1452,7 +1452,7 @@ $$('[data-close]').forEach(e=>e.onclick=closeSheet);
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sheet').hidden)closeSheet();});
 $('#help').onclick=()=>openSheet($('#tpl-help').innerHTML);
 /* 分享：手機用系統分享選單（LINE、訊息等）；電腦複製連結。分享的是目前所在的分頁與模式 */
-$('#share').onclick=async()=>{const url='https://north7.github.io/tidemark/'+LP[HERE]+location.hash,
+$('#share').onclick=async()=>{const url='https://tidemark.aronlab.dev/'+LP[HERE]+location.hash,
   title='Tidemark · BTC 週期訊號',text=document.querySelector('meta[property="og:description"]').content;
   if(navigator.share&&matchMedia('(pointer:coarse)').matches){try{await navigator.share({title,text,url});}catch(e){}return;}
   try{await navigator.clipboard.writeText(url);toast('已複製連結');}

@@ -52,6 +52,6 @@ def make_og(latest: dict, path: Path):
     d.text((64, 516), f"BTC ${latest['price_usd']:,.0f}", font=_font(40, 800), fill=white)
     d.text((64, 568), f"Heat {latest['heat_score']:.0f}  ·  Timing {latest['timing_score']:.0f}  ·  "
                       f"Coldness {latest['cold_score']:.0f}", font=_font(22, 500), fill=mut)
-    d.text((W - 64, 568), "north7.github.io/tidemark", font=_font(22, 600), fill=mut, anchor="ra")
+    d.text((W - 64, 568), "tidemark.aronlab.dev", font=_font(22, 600), fill=mut, anchor="ra")
     path.parent.mkdir(parents=True, exist_ok=True)
     img.save(path, optimize=True)
