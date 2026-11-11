@@ -1,0 +1,67 @@
+name: Deploy to Cloudflare Pages
+
+# 2026-11-11：網站同時部署到 Cloudflare Pages（tidemark.aronlab.dev）。
+# 搬家期間 GitHub Pages 照常運作，兩邊同時上線，確認沒問題才切換。
+# 觸發：push 到 main、手動 workflow_dispatch。
+#     workflow_run：上面這些流程用內建 GITHUB_TOKEN 推送，不會觸發 push 事件，所以另外接。
+# 需要倉庫 Secrets：CLOUDFLARE_API_TOKEN（Account › Cloudflare Pages › Edit）、CLOUDFLARE_ACCOUNT_ID；還沒設定時直接略過。
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["daily-update"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-pages
+  cancel-in-progress: true
+
+env:
+  PROJECT: tidemark
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - name: Secrets 還沒設定就略過
+        if: env.HAS_TOKEN != 'true'
+        run: echo "CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID 還沒設定，這次不部署。"
+
+      - uses: actions/checkout@v4
+        if: env.HAS_TOKEN == 'true'
+        with:
+          ref: main
+
+      - name: 準備上傳的網站資料夾（`docs/`）
+        if: env.HAS_TOKEN == 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/site"
+          rsync -a --exclude='.git' --exclude='.github' --exclude='.claude' docs/ "$RUNNER_TEMP/site/"
+          printf '/tidemark /  301\n/tidemark/* /:splat 301\n' >> "$RUNNER_TEMP/site/_redirects"
+          echo "SITE_DIR=$RUNNER_TEMP/site" >> "$GITHUB_ENV"
+          echo "files: $(find "$RUNNER_TEMP/site" -type f | wc -l)"
+
+      - name: 確認 Pages 專案存在（第一次會建立）
+        if: env.HAS_TOKEN == 'true'
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create ${{ env.PROJECT }} --production-branch=main
+
+      - name: 部署
+        if: env.HAS_TOKEN == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ${{ env.SITE_DIR }} --project-name=${{ env.PROJECT }} --branch=main --commit-dirty=true
