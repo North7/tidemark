@@ -2,7 +2,7 @@
 
 產品名稱為「Tidemark」（副標「BTC 週期訊號」，品牌設定在 btc_top/page.py 的 BRAND）。
 倉庫已於 2026-10 由 btc-top-dashboard 改名為 tidemark（舊 Pages 網址不保留相容）：
-儀表板 https://north7.github.io/tidemark/ ，每日數據 https://north7.github.io/tidemark/latest.json
+儀表板 https://tidemark.aronlab.dev/ ，每日數據 https://tidemark.aronlab.dev/latest.json
 
 ## 給 Claude Code 的說明
 使用者不是工程師。請你負責全部的建置與部署，每一步用繁體中文簡短說明在做什麼。
@@ -199,7 +199,7 @@ MVRV Z-score、NUPL、Puell Multiple、Realized Price 倍數（價格 / 實現�
   無 Cookie、不收集個人資料，頁尾須保留告知；每個分頁＋模式各計一個路徑）
 
 ## 作品集頁（2026-10 加入）
-`docs/case-study/`（north7.github.io/tidemark/case-study/）是使用者的 PM 作品集案例頁，靜態檔案、不由 run.py 產生。
+`docs/case-study/`（tidemark.aronlab.dev/case-study/）是使用者的 PM 作品集案例頁，靜態檔案、不由 run.py 產生。
 **Tidemark 網站與 README 都不放它的連結**（使用者要求）；修改時直接編輯該資料夾。
 
 ## 部署步驟（由 Claude Code 執行）

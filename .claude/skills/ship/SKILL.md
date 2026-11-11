@@ -87,5 +87,5 @@ git log --oneline -2
 ## 6. 回報
 
 - 改了什麼（白話、條列）、檢查結果、還沒做的事。
-- 網址：儀表板 https://north7.github.io/tidemark/ （簡體 /zh-hans/、英文 /en/），GitHub Pages 約 1 分鐘後生效。
+- 網址：儀表板 https://tidemark.aronlab.dev/ （簡體 /zh-hans/、英文 /en/），GitHub Pages 約 1 分鐘後生效。
 - 需要使用者動手的事要明確說點哪裡。

@@ -17,7 +17,7 @@ import requests
 
 from btc_top.checks import DOCS, run_checks
 
-SITE = "https://north7.github.io/tidemark/"
+SITE = "https://tidemark.aronlab.dev/"
 
 
 def send(text: str) -> bool:
