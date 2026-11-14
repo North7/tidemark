@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="canonical" href="https://tidemark.aronlab.dev/case-study/en/">
+<link rel="alternate" hreflang="zh-Hant" href="https://tidemark.aronlab.dev/case-study/?lang=zh">
+<link rel="alternate" hreflang="en" href="https://tidemark.aronlab.dev/case-study/en/">
+<link rel="alternate" hreflang="x-default" href="https://tidemark.aronlab.dev/case-study/">
+<script>
+  // 2026-11-15 英文版產品案例。英文版只看網址的 ?lang= 和自己選過的語言（localStorage 的 lang，與 Tidemark 主站共用：zh／hans 都算中文），
+  //   不依 IP 轉回中文：直接給的英文連結就照英文看。中文版的判斷見 ../index.html 開頭。
+  (function () {
+    var q = new URLSearchParams(location.search).get('lang'), s = null;
+    try { s = localStorage.getItem('lang'); } catch (e) {}
+    if (q === 'zh' || (q !== 'en' && (s === 'zh' || s === 'hans'))) location.replace('/case-study/?lang=zh' + location.hash);
+  })();
+</script>
+<meta name="description" content="Tidemark, a Bitcoin cycle-signal product: a product case study covering the brief, decisions and trade-offs, testing, iterations, the cycle strategy, the interface, and how it runs.">
+<meta property="og:type" content="article"><meta property="og:title" content="Tidemark case study | A 0→1 data product">
+<meta property="og:description" content="From problem framing and testing to launch and daily operation: a Bitcoin cycle data product that updates itself every day.">
+<meta property="og:url" content="https://tidemark.aronlab.dev/case-study/en/">
+<meta property="og:image" content="https://tidemark.aronlab.dev/case-study/img/hero.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%2320e3b2'/%3E%3Cpath d='M6 18.5c2.6 0 2.6-7 5.2-7s2.6 7 5.2 7 2.6-7 5.2-7 2.6 7 4.4 7' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>body{margin:0}</style>
+<title>Tidemark case study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* 版面與中文版相同：單欄長文（最寬 1120px），重點圖片可放寬；英文內文改用 Archivo */
+:root{
+  --bg:#03040a;--surface:#0d0f1a;--surface2:#151827;--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);
+  --fg:#eef0fb;--mut:#a3a9c6;--faint:#6f7694;
+  --top:#ff4d6d;--top2:#c03cff;--bot:#20e3b2;--bot2:#2aa8ff;--mid:#7c8cff;--strat:#f5b84c;
+  --disp:"Archivo",-apple-system,"Helvetica Neue",sans-serif;
+  --body:"Archivo",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --bg:#f3f4f9;--surface:#ffffff;--surface2:#eceef6;--line:rgba(20,24,60,.10);--line2:rgba(20,24,60,.18);
+  --fg:#0f1226;--mut:#4d5472;--faint:#7b8199;--top:#d6304f;--top2:#8f2bd1;--bot:#0c9e7a;--bot2:#1d84d0;--mid:#4f5bd5;--strat:#b97b0c;color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#f3f4f9;--surface:#ffffff;--surface2:#eceef6;--line:rgba(20,24,60,.10);--line2:rgba(20,24,60,.18);
+  --fg:#0f1226;--mut:#4d5472;--faint:#7b8199;--top:#d6304f;--top2:#8f2bd1;--bot:#0c9e7a;--bot2:#1d84d0;--mid:#4f5bd5;--strat:#b97b0c;color-scheme:light}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.65 var(--body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:0 96px}
+img{display:block;max-width:100%;height:auto;border-radius:14px;border:1px solid var(--line)}
+a{color:var(--bot2)}
+h1,h2,h3{font-family:var(--disp);text-wrap:balance;margin:0}
+p{margin:0}
+.mono,.lbl{font-family:var(--mono)}
+.lbl{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+
+/* 頂部 */
+header.hero{padding-block:clamp(48px,9vw,110px) 40px;display:grid;gap:22px;position:relative}
+header.hero::before{content:"";position:absolute;inset:-40px calc(50% - 50vw) auto;height:520px;z-index:-1;pointer-events:none;
+  background:radial-gradient(40% 70% at 15% 20%,color-mix(in srgb,var(--bot) 26%,transparent),transparent 70%),
+             radial-gradient(40% 70% at 70% 0%,color-mix(in srgb,var(--top2) 22%,transparent),transparent 70%);filter:blur(10px)}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:12px;font:800 20px var(--disp)}
+.brand svg{width:40px;height:40px;border-radius:11px}
+header h1{font-size:clamp(44px,8vw,96px);font-weight:900;letter-spacing:-.04em;line-height:1.02}
+header h1 em{font-style:normal;background:linear-gradient(90deg,var(--bot),var(--bot2) 45%,var(--top2) 75%,var(--top));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{font-size:clamp(17px,1.6vw,20px);color:var(--mut);max-width:62ch}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);margin-top:10px}
+.meta div{padding:14px 16px 14px 0;display:grid;gap:2px}
+.meta div+div{padding-left:16px;border-left:1px solid var(--line)}
+.meta b{font-weight:600;font-size:15px}
+.cover{margin-inline:calc(-1 * clamp(0px,4vw,80px))}
+.links{display:flex;flex-wrap:wrap;gap:10px}
+.links a{font:600 13px var(--mono);text-decoration:none;color:var(--fg);padding:9px 16px;border-radius:999px;border:1px solid var(--line2)}
+.links a:hover,.links a:focus-visible{border-color:var(--bot);outline:none}
+
+/* 語言切換：中／EN 一對膠囊，現在的那個墨色底（與 Aron Lab 的產品案例同一種） */
+.langseg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line2);border-radius:99px;background:var(--surface)}
+.langseg a{padding:5px 11px;border-radius:99px;font:600 12px/1 var(--mono);letter-spacing:.06em;color:var(--mut);text-decoration:none}
+.langseg a[aria-current="true"]{background:var(--fg);color:var(--bg)}
+.langseg a:focus-visible{outline:2px solid var(--bot);outline-offset:2px}
+html.leaving .wrap{opacity:0;transform:translateY(6px)}
+
+/* 目錄 */
+nav.toc{display:flex;flex-wrap:wrap;gap:6px 18px;padding-block:18px;border-bottom:1px solid var(--line);font-size:14px}
+nav.toc a{color:var(--mut);text-decoration:none}nav.toc a:hover{color:var(--fg)}
+
+/* 章節 */
+section{padding-block:72px 8px;display:grid;gap:22px;scroll-margin-top:20px}
+section>header{display:grid;gap:8px}
+section h2{font-size:clamp(30px,4.2vw,48px);font-weight:900;letter-spacing:-.03em;line-height:1.1}
+section h3{font-size:20px;font-weight:800;letter-spacing:-.01em}
+.prose{display:grid;gap:14px;max-width:68ch}
+.prose p{color:var(--fg)}
+.muted{color:var(--mut)}
+.cols{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.cols>*{min-width:0}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px;display:grid;gap:8px;align-content:start}
+.box p{color:var(--mut);font-size:15px}
+.box .k{font:900 34px/1 var(--disp);letter-spacing:-.03em}
+
+/* 數字列 */
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-top:1px solid var(--line2);border-bottom:1px solid var(--line2)}
+.figs div{padding:18px 14px 16px 0;display:grid;gap:4px}
+.figs div+div{padding-left:16px;border-left:1px solid var(--line)}
+.figs b{font:900 clamp(34px,4vw,48px)/1 var(--disp);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.figs span{font-size:13px;color:var(--mut)}
+/* 手機兩欄時，換到新一行的第一格不要左邊的分隔線和縮排 */
+@media (max-width:560px){.meta div:nth-child(odd),.figs div:nth-child(odd){padding-left:0;border-left:0}}
+
+/* 公式 */
+.formula{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.formula .f{border-radius:16px;padding:22px;border:1px solid var(--line2);display:grid;gap:10px}
+.f.top{background:linear-gradient(135deg,color-mix(in srgb,var(--top) 14%,var(--surface)),var(--surface))}
+.f.bot{background:linear-gradient(135deg,color-mix(in srgb,var(--bot) 14%,var(--surface)),var(--surface))}
+.f .eq{font:800 clamp(22px,2.6vw,30px)/1.2 var(--disp);letter-spacing:-.02em}
+.f.top .eq b{color:var(--top)}.f.bot .eq b{color:var(--bot)}
+.f ul{margin:0;padding-left:18px;color:var(--mut);font-size:15px;display:grid;gap:4px}
+
+/* 表格 */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px var(--mono);letter-spacing:.06em;color:var(--mut);background:var(--surface2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font:700 11px var(--mono);padding:2px 8px;border-radius:6px;white-space:nowrap}
+.tag.y{color:var(--bot);background:color-mix(in srgb,var(--bot) 14%,transparent)}
+.tag.n{color:var(--top);background:color-mix(in srgb,var(--top) 14%,transparent)}
+.tag.r{color:var(--mid);background:color-mix(in srgb,var(--mid) 16%,transparent)}
+
+/* 圖 */
+figure{margin:0;display:grid;gap:10px}
+figcaption{font-size:13.5px;color:var(--mut)}
+figcaption b{color:var(--fg);font-weight:600}
+.wide{margin-inline:calc(-1 * clamp(0px,3vw,80px))}
+.g2{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.g2>*{min-width:0}
+.g4{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.phones{display:grid;gap:18px;grid-template-columns:repeat(3,minmax(0,1fr));max-width:820px}
+.phones img{border-radius:22px}
+@media (max-width:560px){.phones{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.swatches{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.sw{border-radius:14px;padding:16px;border:1px solid var(--line);display:grid;gap:4px;font-size:14px}
+.sw i{display:block;height:44px;border-radius:9px;margin-bottom:6px}
+.sw b{font-weight:700}.sw span{color:var(--mut);font-size:13px}
+
+/* 架構圖 */
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;overflow-x:auto}
+.diagram pre.mermaid{margin:0;background:transparent;text-align:center;min-width:640px}
+
+/* 時間線 */
+ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:0;border-left:2px solid var(--line2)}
+ol.steps li{position:relative;padding:0 0 22px 22px;display:grid;gap:4px}
+ol.steps li::before{content:"";position:absolute;left:-7px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--bot)}
+ol.steps b{font-weight:700}
+ol.steps span{color:var(--mut);font-size:15px}
+
+ul.list{margin:0;padding-left:20px;display:grid;gap:6px}
+.brief{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:760px){.brief{grid-template-columns:1fr 1fr}}
+.brief .box.full{grid-column:1/-1}
+.box .lbl{margin-bottom:2px}
+.box ul{margin:0;padding-left:20px;color:var(--fg);font-size:15px;display:grid;gap:4px}
+.iters{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.it{border-top:3px solid var(--c);background:var(--surface);border-radius:0 0 14px 14px;padding:16px 18px;display:grid;gap:6px;align-content:start}
+.it .v{font:600 12px var(--mono);letter-spacing:.08em;color:var(--mut)}
+.it b{font:800 19px/1.3 var(--disp)}
+.it p{color:var(--mut);font-size:14.5px}
+.it .why{color:var(--fg);font-size:14px;border-top:1px dashed var(--line2);padding-top:8px;margin-top:2px}
+.rm{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.rm .box h3{font-size:18px}
+.role{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.role span{font-size:14.5px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+ol.num{margin:0;padding-left:22px;display:grid;gap:8px;max-width:68ch}
+ol.num b{font-weight:700}
+footer{margin-top:80px;padding-top:28px;border-top:1px solid var(--line);display:grid;gap:8px;color:var(--mut);font-size:14px}
+:focus-visible{outline:2px solid var(--bot);outline-offset:3px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.wrap{transition:opacity .22s ease,transform .22s ease}.langseg a{transition:background .25s,color .25s}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="toprow">
+    <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#20e3b2"/><stop offset="1" stop-color="#2aa8ff"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#lg)"/><path d="M6 18.5c2.6 0 2.6-7 5.2-7s2.6 7 5.2 7 2.6-7 5.2-7 2.6 7 4.4 7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11.2" cy="11.5" r="1.6" fill="#fff"/></svg>Tidemark</div>
+    <div class="langseg" role="group" aria-label="語言 Language"><a href="/case-study/?lang=zh" data-lang-set="zh" lang="zh-Hant" hreflang="zh-Hant">中</a><a href="/case-study/en/?lang=en" data-lang-set="en" lang="en" hreflang="en" aria-current="true">EN</a></div>
+  </div>
+  <div class="lbl">Case study · Product management · 0→1 data product</div>
+  <h1>Reading Bitcoin’s <em>tides</em></h1>
+  <p class="lede">A data product that updates itself every day, taken from problem framing and testing to launch and operation. It turns 17 public indicators and the halving cycle into two numbers you can act on: a top signal and a bottom signal. A cycle strategy, backtested round by round, sits on top.</p>
+  <div class="meta">
+    <div><span class="lbl">Role</span><b>Product manager (solo project)</b></div>
+    <div><span class="lbl">Period</span><b>October 2026 · 8 iterations</b></div>
+    <div><span class="lbl">Status</span><b>Live · updates daily</b></div>
+    <div><span class="lbl">Build</span><b>With AI (Claude Code)</b></div>
+  </div>
+  <div class="links">
+    <a href="https://tidemark.aronlab.dev/en/">Live site</a>
+    <a href="https://github.com/North7/tidemark">Source &amp; method</a>
+    <a href="https://tidemark.aronlab.dev/latest.json">Daily data (JSON)</a>
+  </div>
+</header>
+
+<figure class="cover"><img src="../img/hero.jpg" alt="Tidemark key visual: a laptop showing the bottom-signal overview, and two phones showing the cycle strategy and future scenarios" width="2400" height="1500"></figure>
+
+<nav class="toc" aria-label="Contents">
+  <a href="#overview">Overview</a><a href="#brief">Brief</a><a href="#decisions">Decisions</a><a href="#research">Testing</a><a href="#model">Signal model</a>
+  <a href="#iterations">Iterations</a><a href="#strategy">Strategy</a><a href="#ui">Interface</a><a href="#design">Design</a><a href="#arch">Operations</a><a href="#metrics">Metrics &amp; risks</a><a href="#roadmap">Roadmap</a><a href="#learn">Reflection</a>
+</nav>
+
+<section id="overview">
+  <header><div class="lbl">Overview</div><h2>Project overview</h2></header>
+  <div class="figs">
+    <div><b>8</b><span>iterations · 0 → 1 launch</span></div>
+    <div><b>17</b><span>scored indicators · 15 years of data</span></div>
+    <div><b>48</b><span>candidate indicators tested</span></div>
+    <div><b>700+</b><span>backtests</span></div>
+    <div><b>0</b><span>paid data sources · backend servers</span></div>
+  </div>
+  <div class="prose"><p><b>My part</b>: the code was written with an AI coding tool. I was the one who set the requirements, made the calls, and signed off on the result.</p></div>
+  <div class="role">
+    <span>Problem framing</span><span>Goals &amp; success criteria</span><span>Scope &amp; priorities</span><span>Research &amp; test design</span>
+    <span>Key decisions &amp; trade-offs</span><span>Information architecture</span><span>Experience direction</span><span>Launch monitoring &amp; iteration</span>
+  </div>
+</section>
+
+<section id="brief">
+  <header><div class="lbl">Product brief</div><h2>The brief, on one page</h2></header>
+  <div class="brief">
+    <div class="box"><span class="lbl" style="color:var(--top)">Problem</span><p>Classic on-chain indicators peak lower every cycle (MVRV 4.7 → 4.4 → 2.9 → 2.3), so fixed thresholds fire later and later. Mid-cycle highs also run hotter than the real top. If you only ask “is it hot?”, you get the alarm at the wrong time.</p></div>
+    <div class="box"><span class="lbl" style="color:var(--bot)">Users</span><p>Long-term Bitcoin holders who want to know where we are in the cycle. Also automated workflows that read the data each day to write a daily report (the JSON feed).</p></div>
+    <div class="box"><span class="lbl" style="color:var(--strat)">Core bet</span><p>A top = data that is extreme enough × timing inside the historical window. The signal fires only when both are true. That rules out false alarms at mid-cycle highs.</p></div>
+    <div class="box"><span class="lbl" style="color:var(--mid)">Success criteria</span><ul><li>Each of the last three tops is the highest signal of its cycle</li><li>Zero false alarms at fake bottoms</li><li>Updates itself every day, no manual upkeep</li></ul></div>
+    <div class="box full"><span class="lbl">Non-goals</span><p>No trading · No personal holdings stored · No paid data in v1 · No price forecasts or probabilities</p></div>
+  </div>
+  <div class="prose"><p class="muted">I reframed the question from “is it hot?” to “are heat and timing both in place?”. I wrote down the success criteria and the non-goals first, and used them to judge every later decision.</p></div>
+</section>
+
+<section id="decisions">
+  <header><div class="lbl">Decision log</div><h2>Key decisions and trade-offs</h2></header>
+  <div class="tw"><table>
+    <thead><tr><th>Decision</th><th>Options</th><th>Choice</th><th>Why, and the cost</th></tr></thead>
+    <tbody>
+      <tr><td>Signal structure</td><td>Heat only / heat × timing</td><td><b>Heat × timing</b></td><td>With heat alone, mid-cycle highs score hotter than real tops. The cost: it relies on the four-year cycle holding. Listed as a known limit.</td></tr>
+      <tr><td>Holder-behavior data</td><td>Paid CryptoQuant / free 4-year data / leave out</td><td><b>Leave out</b></td><td>Four years of history can’t be tested across cycles. A trial made the top signal worse, and the license bars public use.</td></tr>
+      <tr><td>Mid-term feature</td><td>Precise buy/sell signals / a status panel</td><td><b>Status panel</b></td><td>Research on 48 indicators found nothing reliable for mid-term turns. So no signal that could mislead.</td></tr>
+      <tr><td>Strategy results</td><td>Backtest only / plus live tracking</td><td><b>Freeze date + live tracking</b></td><td>The rules were picked after seeing history. A freeze date lets future data test the product.</td></tr>
+      <tr><td>Future scenarios</td><td>One forecast line / three scenarios + odds / three scenarios, no odds</td><td><b>Three scenarios, no odds</b></td><td>There are only 3–4 cycles to learn from. Odds would fake a precision we don’t have.</td></tr>
+      <tr><td>Daily schedule</td><td>GitHub schedule / external trigger</td><td><b>External trigger + backup</b></td><td>GitHub’s schedule ran about 5 hours late in tests, so the daily report would read stale data.</td></tr>
+      <tr><td>Information architecture</td><td>Mid-term as page 2 / its own button</td><td><b>Its own button</b></td><td>Pages 01–04 are all about tops and bottoms. Mid-term isn’t, so mixing it in would confuse people.</td></tr>
+    </tbody></table></div>
+  <div class="prose"><p class="muted">I’d rather ship one feature less than one feature that can’t be trusted. Matching what a feature promises to how strong the evidence is — that is a product decision too.</p></div>
+</section>
+
+<section id="research">
+  <header><div class="lbl">Research</div><h2>Test first, ship only what passes</h2></header>
+  <div class="prose">
+    <p>The product has one rule: every new indicator is tested against past tops, past bottoms and “false signals” (mid-cycle highs and mid-cycle dips). It ships only if it passes. In total: 48 candidate indicators, about 10 strategy designs, and 700+ backtests.</p>
+    <p>Later I switched to <b>fixing the candidates and parameters before running the test</b>, so I couldn’t pick rules after seeing the results. Most answers were “this doesn’t work”. Those negative results are published in the product docs, right next to the ones that worked.</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>What we tested</th><th>Result</th><th>Decision</th></tr></thead>
+    <tbody>
+      <tr><td>48 free indicators for mid-term turns (fit on 2014–19, tested on 2020–26)</td><td>None ranked the final top above mid-cycle highs</td><td><span class="tag y">Keep structure</span></td></tr>
+      <tr><td>Power Law trend multiple</td><td>Three bottoms at 0.24–0.48×, no false alarms at fake bottoms; top readings fall fast each cycle</td><td><span class="tag y">Added (bottoms)</span></td></tr>
+      <tr><td>Pi Cycle Top</td><td>The last two tops read the same as the 2019 fake top</td><td><span class="tag n">Not used</span></td></tr>
+      <tr><td>Exchange net inflow</td><td>Zero at the 2021 and 2025 tops; money now moves through ETFs and custodians</td><td><span class="tag n">Removed</span></td></tr>
+      <tr><td>Long-term holder SOPR, CDD (4 years of free data)</td><td>The 2024-03 fake top scored 100, the real 2025 top 48 — it made the top signal worse</td><td><span class="tag n">Not used</span></td></tr>
+      <tr><td>Delta Price</td><td>Separates real and fake bottoms, but correlates 0.67 with MVRV; adding it slightly hurt separation</td><td><span class="tag r">Reference only</span></td></tr>
+      <tr><td>Dodging pullbacks inside bull markets (7 trend filters)</td><td>Lost to buy-and-hold in all three bull markets</td><td><span class="tag n">Not used</span></td></tr>
+      <tr><td>Buying dips for short trades (4 exit methods)</td><td>After 2020, all lost to entering on a random day</td><td><span class="tag n">Not used</span></td></tr>
+    </tbody></table></div>
+</section>
+
+<section id="model">
+  <header><div class="lbl">Signal model</div><h2>Signal model: data × clock</h2></header>
+  <div class="formula">
+    <div class="f top"><div class="lbl">Top signal</div><div class="eq"><b>Top signal</b> = heat × timing</div>
+      <ul><li>Heat: on-chain valuation 44%, capital flows 25%, leverage 19%, sentiment 12%</li><li>Timing: days since halving and days since this cycle’s low, compared with the last three tops</li><li>≥ 50 top window, ≥ 70 high alert</li></ul></div>
+    <div class="f bot"><div class="lbl">Bottom signal</div><div class="eq"><b>Bottom signal</b> = coldness × bottom timing</div>
+      <ul><li>Coldness: valuation 50%, miners 30%, price structure 20%</li><li>Bottom timing: days since the last top and since the last halving, compared with the last three bottoms</li><li>≥ 50 bottom zone, ≥ 70 strong bottom</li></ul></div>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>Category</th><th>Indicators</th><th>Scoring</th></tr></thead>
+    <tbody>
+      <tr><td>On-chain valuation</td><td>MVRV Z-score, NUPL, Puell Multiple, realized price multiple</td><td>Cycle method: fit the falling trend of the last four tops to estimate this cycle’s top</td></tr>
+      <tr><td>Capital flows</td><td>ETF 30-day net inflow, ETF flow momentum, stablecoin 90-day growth, Coinbase premium</td><td>4-year rolling percentile (less than three cycles of history)</td></tr>
+      <tr><td>Leverage &amp; derivatives</td><td>Funding rate 7-day avg, open interest / market cap, futures basis</td><td>4-year rolling percentile</td></tr>
+      <tr><td>Sentiment</td><td>Fear &amp; Greed Index 7-day avg</td><td>4-year rolling percentile</td></tr>
+      <tr><td>Coldness (bottoms)</td><td>MVRV, NUPL, Puell, Hash Ribbons, AHR999, Power Law</td><td>Fit the last three bottoms to estimate this cycle’s bottom; Hash Ribbons by depth of miner capitulation</td></tr>
+    </tbody></table></div>
+  <p class="muted" style="max-width:68ch">Indicators in the same category are averaged first, then weighted, so closely related indicators don’t count twice. A percentile of 35 or below scores 0, so a normal day doesn’t read as “half hot”.</p>
+  <div class="diagram"><pre class="mermaid">
+flowchart LR
+  subgraph D[Public data]
+    CM[Coin Metrics on-chain]
+    ETF[TFTC ETF flows]
+    DL[DefiLlama stablecoins]
+    EX[OKX · Binance · Coinbase derivatives]
+    FG[Fear & Greed]
+    BS[Bitstamp daily candles]
+  end
+  D --> IND[17 indicators]
+  IND --> H[Heat 0–100]
+  IND --> C[Coldness 0–100]
+  CLK[Halving & cycle clocks] --> T[Timing]
+  CLK --> BT[Bottom timing]
+  H --> TS{{Top signal}}
+  T --> TS
+  C --> BSG{{Bottom signal}}
+  BT --> BSG
+  TS --> ST[Cycle strategy]
+  BSG --> ST
+  BS --> SUP[Weekly Supertrend] --> ST
+</pre></div>
+</section>
+
+<section id="iterations">
+  <header><div class="lbl">Iterations</div><h2>Iterations: each version answers one problem</h2></header>
+  <div class="iters">
+    <div class="it" style="--c:var(--mid)"><span class="v">V1 · MVP</span><b>Heat score goes live</b><p>Four indicator groups, weighted; daily updates and a JSON feed</p><p class="why">Found: the score goes “numb” a little more each cycle</p></div>
+    <div class="it" style="--c:var(--top)"><span class="v">V2 · Model</span><b>Heat × timing</b><p>Added two clocks: the halving and the cycle low</p><p class="why">Result: all three final tops became the highest point of their cycle</p></div>
+    <div class="it" style="--c:var(--bot)"><span class="v">V3 · Scope</span><b>Bottom signal</b><p>Coldness × bottom timing, plus a test of the cycle structure</p><p class="why">Why: to check whether bear markets are shallower in the ETF era</p></div>
+    <div class="it" style="--c:var(--bot2)"><span class="v">V4 · Experience</span><b>Brand and redesign</b><p>Brand, two languages, and four visual proposals narrowed down to “Aurora Tide”</p><p class="why">Why: too dense, hard to read</p></div>
+    <div class="it" style="--c:var(--mid)"><span class="v">V5 · Research</span><b>Market state</b><p>After the 48-indicator study, built as a reference panel</p><p class="why">Call: evidence is weak, so no signal</p></div>
+    <div class="it" style="--c:var(--strat)"><span class="v">V6 · Value</span><b>Cycle strategy and scenarios</b><p>Round-by-round backtests, a simulated equity curve, three future scenarios</p><p class="why">Why: go from “I get it” to “what do I do”</p></div>
+    <div class="it" style="--c:var(--bot)"><span class="v">V7 · Operations</span><b>Reliability and monitoring</b><p>Automatic checks, event alerts, traffic stats, live tracking after the freeze</p><p class="why">Why: no one watches it, and it still can’t break</p></div>
+    <div class="it" style="--c:var(--top)"><span class="v">V8 · Polish</span><b>Interaction details</b><p>Tide note, long-press on mobile, share card, timing explainers</p><p class="why">Why: user feedback and walkthroughs</p></div>
+  </div>
+</section>
+
+<section id="strategy">
+  <header><div class="lbl">Strategy</div><h2>Cycle strategy: alert + trend confirmation</h2></header>
+  <div class="cols">
+    <div class="box"><span class="lbl" style="color:var(--strat)">Alert</span><p>While holding: once the top signal or top timing reaches 50, go on alert and stay there until a sale. (In practice this means top timing ≥ 50.)</p></div>
+    <div class="box"><span class="lbl" style="color:var(--top)">Sell</span><p>On alert: when the weekly Supertrend (ATR 10 × 3) turns from up to down, sell everything.</p></div>
+    <div class="box"><span class="lbl" style="color:var(--bot)">Buy back</span><p>In cash: when the bottom signal reaches 50 or the weekly Supertrend turns up, buy everything back.</p></div>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>Start</th><th>Strategy</th><th>Buy &amp; hold</th><th>Strategy ÷ hold</th><th>Strategy max drawdown</th><th>Hold max drawdown</th></tr></thead>
+    <tbody>
+      <tr><td class="n">2014</td><td class="n">857×</td><td class="n">114×</td><td class="n">7.5×</td><td class="n">−74%</td><td class="n">−84%</td></tr>
+      <tr><td class="n">2018</td><td class="n">13.1×</td><td class="n">6.4×</td><td class="n">2.1×</td><td class="n">−81%</td><td class="n">−81%</td></tr>
+      <tr><td class="n">2022</td><td class="n">2.7×</td><td class="n">1.8×</td><td class="n">1.5×</td><td class="n">−67%</td><td class="n">−67%</td></tr>
+    </tbody></table></div>
+  <p class="muted" style="font-size:14px">Backtest as of the freeze date (2026-10-06). The live site shows the latest numbers.</p>
+  <div class="prose"><h3>Letting the future test the product</h3></div>
+  <ol class="num">
+    <li><b>Round-by-round backtests</b>: each cycle only uses the tops and bottoms known at the time. Every start year begins fresh: fully invested, not on alert.</li>
+    <li><b>Sensitivity test</b>: all 27 threshold combinations between 40 and 60 beat buy-and-hold. But they produce only 3 distinct position paths, so this only shows the parameters aren’t fragile.</li>
+    <li><b>A freeze date (2026-10-06)</b>: the rules are locked from that day, and later results are shown apart. The conservative, base and optimistic scenarios were frozen too and are checked against real data every day. Each day’s decision goes into an append-only log.</li>
+    <li><b>Outside AI review</b>: I gave the algorithm spec to other AIs to recompute on their own, and accepted 6 findings. The bottom test became a frozen hypothesis that can fail. Each start year’s backtest now begins fresh. Limits are disclosed as they are, such as “heat doesn’t affect trades” and “top dates were chosen after the fact”. The numbers got worse, but more believable.</li>
+  </ol>
+</section>
+
+<section id="ui">
+  <header><div class="lbl">Interface</div><h2>Interface</h2></header>
+  <figure class="wide"><img src="img/overview.jpg" alt="Overview, first screen: the liquid big number for the bottom signal, the tide note, and the coldness gauge" loading="lazy"><figcaption><b>Overview</b> · The information architecture follows the questions people come to ask. Pages 01–04 cover tops and bottoms; market state and the cycle strategy get their own buttons. The home page opens on the bottom signal, because right now the key question is whether this cycle’s bottom holds.</figcaption></figure>
+  <div class="g2">
+    <figure><img src="img/strategy.jpg" alt="Cycle strategy page: holding, 100% position, last trade" loading="lazy"><figcaption><b>Cycle strategy</b> · Position, alert status, last trade and what triggers the next step.</figcaption></figure>
+    <figure><img src="img/scenarios.jpg" alt="Future scenarios chart: conservative, base and optimistic paths" loading="lazy"><figcaption><b>Future scenarios</b> · Three paths extended from past patterns, clearly marked as not a forecast.</figcaption></figure>
+    <figure><img src="img/timing.jpg" alt="Timing page: two clock timelines with windows" loading="lazy"><figcaption><b>Timing</b> · Two clocks mark past tops and bottoms, the full-score window and today. Tap for details.</figcaption></figure>
+    <figure><img src="img/midterm.jpg" alt="Market state page: trend, bull-market dip watch, short-term overheating" loading="lazy"><figcaption><b>Market state</b> · Trend and condition checklists with historical stats, labeled as weaker evidence.</figcaption></figure>
+    <figure><img src="img/heat.jpg" alt="Heat page: categories and indicator cards" loading="lazy"><figcaption><b>Heat</b> · Full-width on wide screens. Tap any indicator card for its full history.</figcaption></figure>
+    <figure><img src="img/strategy-light.jpg" alt="Cycle strategy page in light mode" loading="lazy"><figcaption><b>Light mode</b> · Dark by default; switch to light or follow the system.</figcaption></figure>
+  </div>
+  <div class="phones">
+    <figure><img src="img/m-overview.jpg" alt="Mobile overview" loading="lazy"><figcaption><b>Mobile · Overview</b> · The header tucks away as you scroll; long-press a chart to read values</figcaption></figure>
+    <figure><img src="img/m-strategy.jpg" alt="Mobile cycle strategy" loading="lazy"><figcaption><b>Mobile · Cycle strategy</b></figcaption></figure>
+    <figure><img src="img/m-scenarios.jpg" alt="Mobile future scenarios" loading="lazy"><figcaption><b>Mobile · Future scenarios</b></figcaption></figure>
+  </div>
+</section>
+
+<section id="design">
+  <header><div class="lbl">Design</div><h2>Design: four directions, narrowed to “Aurora Tide”</h2></header>
+  <div class="prose"><p>I built four clickable visual proposals, let people use them and pick what they liked, then combined the winners: moving waves and gauges from Tide, color and mood from Aurora, big numbers and grid order from Swiss. Each of the four modes has its own color, so you always know what kind of information you’re looking at.</p></div>
+  <div class="g4">
+    <figure><img src="../img/explore-a.jpg" alt="Direction A: Tide" loading="lazy"><figcaption><b>A Tide</b> · Waves and gauges</figcaption></figure>
+    <figure><img src="../img/explore-b.jpg" alt="Direction B: Swiss" loading="lazy"><figcaption><b>B Swiss</b> · Huge numbers, grid order</figcaption></figure>
+    <figure><img src="../img/explore-c.jpg" alt="Direction C: Aurora" loading="lazy"><figcaption><b>C Aurora</b> · Color and mood</figcaption></figure>
+    <figure><img src="../img/explore-d.jpg" alt="Direction D: Aurora Tide" loading="lazy"><figcaption><b>D Aurora Tide</b> · The final mix</figcaption></figure>
+  </div>
+  <p class="muted" style="font-size:14px">The design proposals were made in Chinese.</p>
+  <div class="cols">
+    <div class="box"><h3>Liquid big number</h3><p>The signal score is a huge outlined number. The “water” inside rises to match the score and keeps moving.</p></div>
+    <div class="box"><h3>Different motion for tops and bottoms</h3><p>Top mode has a fast, rising tide. Bottom mode has slow deep-sea swells and bubbles drifting up from the seabed.</p></div>
+    <div class="box"><h3>Tide note</h3><p>One sentence on today’s state, picked from templates by the day’s data. It only describes the data and makes no predictions.</p></div>
+  </div>
+  <div class="swatches" aria-label="Color system">
+    <div class="sw"><i style="background:linear-gradient(135deg,var(--bot),var(--bot2))"></i><b>Bottom mode</b><span>Green → blue · home default</span></div>
+    <div class="sw"><i style="background:linear-gradient(135deg,var(--top),var(--top2))"></i><b>Top mode</b><span>Red → purple</span></div>
+    <div class="sw"><i style="background:linear-gradient(135deg,var(--mid),var(--bot2))"></i><b>Market state</b><span>Neutral blue-violet, neither top nor bottom</span></div>
+    <div class="sw"><i style="background:linear-gradient(135deg,var(--strat),#ff7a45)"></i><b>Cycle strategy</b><span>Gold → orange</span></div>
+  </div>
+</section>
+
+<section id="arch">
+  <header><div class="lbl">Architecture</div><h2>Operations: no one watching, nothing breaking</h2></header>
+  <div class="diagram"><pre class="mermaid">
+flowchart TB
+  CRON[cron-job.org<br/>daily at UTC 00:15] --> GA[GitHub Actions]
+  SCHED[GitHub schedule<br/>backup, skips if already updated] -.-> GA
+  GA --> RUN[run.py]
+  RUN --> SRC[sources.py<br/>fetch 8 public data sources<br/>on failure keep old data, mark stale]
+  SRC --> SCO[scoring.py heat · coldness · timing]
+  SCO --> STR[strategy.py round-by-round backtest]
+  SCO --> SCN[scenarios.py three scenarios]
+  SCO --> MID[midterm.py market state]
+  STR & SCN & MID --> OUT[latest.json · pages in each language · og.png · CSV]
+  OUT --> CHK{checks.py automatic checks}
+  CHK -- pass --> GIT[commit] --> PAGES[Website]
+  CHK -- fail --> STOP[Stop · keep yesterday’s site]
+  OUT --> EV[events.py detect key events] --> LINE[LINE alerts]
+  PAGES --> GC[GoatCounter anonymous traffic stats]
+</pre></div>
+  <div class="cols">
+    <div class="box"><h3>Tech choices</h3><p>Python (pandas, numpy, requests, Pillow) generates static HTML. The data is embedded in the page. There is no backend server.</p></div>
+    <div class="box"><h3>Reliability is a requirement</h3><p>If one data source fails, its data is marked as old and the run keeps going. If the automatic checks fail, nothing is published. The platform scheduler ran about 5 hours late, so an outside trigger now starts the run on time, with a backup.</p></div>
+    <div class="box"><h3>Two languages</h3><p>Text is written as “Chinese | English” pairs. One program outputs both language versions, and a check makes sure no Chinese is left on the English page.</p></div>
+  </div>
+</section>
+
+<section id="metrics">
+  <header><div class="lbl">Metrics &amp; risks</div><h2>Success metrics and risk management</h2></header>
+  <div class="g2">
+    <div class="tw"><table><thead><tr><th>Metric</th><th>How it’s tracked</th></tr></thead><tbody>
+      <tr><td>Data on time</td><td>Updates daily at UTC 00:15; late data is marked as old</td></tr>
+      <tr><td>Correct output</td><td>If the automatic checks fail, nothing is published</td></tr>
+      <tr><td>Strategy credibility</td><td>Results after the freeze and the frozen scenarios are compared with real data every day</td></tr>
+      <tr><td>Usage</td><td>Anonymous visits per page (GoatCounter)</td></tr>
+    </tbody></table></div>
+    <div class="tw"><table><thead><tr><th>Risk</th><th>Response</th></tr></thead><tbody>
+      <tr><td>A data source goes down or gets blocked</td><td>Main + backup sources; keep the old value and mark it</td></tr>
+      <tr><td>Overfitting</td><td>Round-by-round backtests, parameters fixed in advance, a freeze date</td></tr>
+      <tr><td>Data licensing</td><td>Only sources that allow public use; anything else stays off the site</td></tr>
+      <tr><td>Being read as investment advice</td><td>Scenarios marked as not forecasts; a site-wide disclaimer</td></tr>
+    </tbody></table></div>
+  </div>
+  <figure style="max-width:640px"><img src="../img/og.jpg" alt="The share preview image generated each day" loading="lazy"><figcaption><b>Daily share card</b> · When you share the link, the preview is a live summary of today’s state.</figcaption></figure>
+</section>
+
+<section id="roadmap">
+  <header><div class="lbl">Scope &amp; roadmap</div><h2>Scope and roadmap</h2></header>
+  <div class="rm">
+    <div class="box"><h3 style="color:var(--bot)">Live</h3><ul><li>Top and bottom signals</li><li>Cycle strategy and scenarios</li><li>Market state</li><li>Automatic checks and sharing</li></ul></div>
+    <div class="box"><h3 style="color:var(--strat)">Next</h3><ul><li>Connect LINE alerts</li><li>2026-12-19 bottom verdict</li><li>Review traffic data</li></ul></div>
+    <div class="box"><h3 style="color:var(--mid)">Later</h3><ul><li>Paid holder data (only with a public-use license)</li><li>Yearly review of post-freeze results</li></ul></div>
+    <div class="box"><h3 style="color:var(--top)">Won’t do</h3><ul><li>Trading or orders</li><li>Personal holdings</li><li>Price forecasts or odds</li><li>Short-term buy/sell signals</li></ul></div>
+  </div>
+</section>
+
+<section id="learn">
+  <header><div class="lbl">Reflection</div><h2>Reflection</h2></header>
+  <ol class="steps">
+    <li><b>Negative results count too</b><span>Most of the research ended with “this doesn’t work”. Keeping those things out of the product mattered more than adding one more impressive-looking feature.</span></li>
+    <li><b>Honesty builds more trust than pretty numbers</b><span>Calling out the backtest’s limits and setting a freeze date to be tested against — that is the principle I care about most in a data product.</span></li>
+    <li><b>Promising less is a product decision too</b><span>The mid-term feature went from “signal” to “reference”, and the scenarios have no odds. Both match the promise to the strength of the evidence.</span></li>
+    <li><b>Write the boundaries down</b><span>A clear “won’t do” list (no trading, no holdings, no forecasts) makes every new request quick to judge.</span></li>
+  </ol>
+</section>
+
+<footer>
+  <div>Tidemark · Bitcoin cycle signals　·　<a href="https://tidemark.aronlab.dev/en/">tidemark.aronlab.dev</a>　·　Aron</div>
+  <div>Data: Coin Metrics, DefiLlama, TFTC, OKX, Binance, Coinbase, Bitstamp, alternative.me. Strategy results are historical backtests and simulations, for reference only. Not investment advice.</div>
+</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+const dark=!matchMedia('(prefers-color-scheme: light)').matches;
+mermaid.initialize({startOnLoad:true,theme:dark?'dark':'default',themeVariables:{fontFamily:'Archivo'}});
+
+(() => {   // 語言切換：記住選擇（與 Tidemark 主站共用 localStorage 的 lang），淡出後換到另一個語言的同一個章節
+  const secs = [...document.querySelectorAll("section[id]")];
+  document.querySelectorAll("[data-lang-set]").forEach(a => a.addEventListener("click", e => {
+    e.preventDefault();
+    if (a.getAttribute("aria-current") === "true") return;
+    try {   // 中文：原本選的是簡體就保留簡體（主站用），否則記成繁體
+      const s = localStorage.getItem("lang"), v = a.dataset.langSet;
+      localStorage.setItem("lang", v === "zh" && s === "hans" ? "hans" : v);
+    } catch (err) { /* 無痕模式：靠網址的 ?lang= */ }
+    const y = scrollY + innerHeight * 0.3;
+    let id = "";
+    secs.forEach(s => { if (s.offsetTop <= y) id = s.id; });
+    const url = a.getAttribute("href") + (id ? "#" + id : "");
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { location.href = url; return; }
+    document.documentElement.classList.add("leaving");
+    setTimeout(() => { location.href = url; }, 200);
+  }));
+  addEventListener("pageshow", () => document.documentElement.classList.remove("leaving"));
+})();
+</script>
+</body>
+</html>

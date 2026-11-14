@@ -588,7 +588,7 @@ def _future(latest: dict) -> str:
     t, i = c["tops"], c["inputs"]
     return f"""
   <div class="card st-fut">
-    <div class="card-head"><div><div class="eyebrow">SCENARIOS · ⟪情境推演，不是預測|SCENARIOS, NOT FORECASTS⟫</div><h3>⟪下一個頂部的三種情境|Three scenarios for the next top⟫</h3></div>
+    <div class="card-head"><div><div class="eyebrow">SCENARIOS · ⟪情境推演，不是預測|NOT FORECASTS⟫</div><h3>⟪下一個頂部的三種情境|Three scenarios for the next top⟫</h3></div>
       <div class="seg" data-g="fut"><button data-y="0" class="on">⟪情境全貌|Full view⟫</button><button data-y="1">⟪定案後對照|Since snapshot⟫</button></div></div>
     {_scn_status(c)}
     <div class="fut-kpis">
@@ -1515,7 +1515,7 @@ background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blu
 
 .card{background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow),inset 0 1px 0 var(--hl);padding:18px}
 .card+.card{margin-top:14px}.grid>.card+.card{margin-top:0}
-.card-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}.card-head>div:first-child{flex:1}
+.card-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin-bottom:10px}.card-head>div:first-child{flex:1 1 200px}  /* 標題太窄時右側切換鈕換到下一行，不把標題擠成一字一行（英文版手機） */
 .card h3{margin:0;font-size:16px}
 .eyebrow{font-size:11px;letter-spacing:1.2px;color:var(--faint);font-weight:600}
 .link{font-size:13px;color:var(--accent);text-decoration:none;white-space:nowrap}
@@ -2493,18 +2493,22 @@ function drawFut(){const el=$('#c-fut');if(!el||!SCN.dates)return;const W=el.cli
   const x=t=>L+(W-L-R)*(t-t0)/(t1-t0),y=v=>T+(H-T-B)*(1-(Math.log10(v)-lo)/(hi-lo)),grid=css('--line'),mut=css('--faint');
   let g='';
   [1e4,2e4,5e4,1e5,2e5,5e5,1e6].filter(v=>Math.log10(v)>=lo&&Math.log10(v)<=hi).forEach(v=>{g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${grid}"/><text x="${L-6}" y="${y(v)+4}" font-size="11" text-anchor="end" fill="${mut}">${v>=1e6?v/1e6+'M':v/1e3+'k'}</text>`;});
-  for(let yr=2022;yr<=new Date(t1).getUTCFullYear();yr++){const t=Date.UTC(yr,0,1);if(t>t0&&t<t1)g+=`<text x="${x(t)}" y="${H-6}" font-size="11" text-anchor="middle" fill="${mut}">${yr}</text>`;}
+  /* 手機上年份標籤至少相隔 36px，太擠就隔年標 */
+  const ystep=Math.max(1,Math.ceil(36/((W-L-R)*365*DAY/(t1-t0))));
+  for(let yr=2022;yr<=new Date(t1).getUTCFullYear();yr++){const t=Date.UTC(yr,0,1);if(t>t0&&t<t1&&(yr-2022)%ystep===0)g+=`<text x="${x(t)}" y="${H-6}" font-size="11" text-anchor="middle" fill="${mut}">${yr}</text>`;}
   const wa=Date.parse(SCN.window.from),wb=Date.parse(SCN.window.to);
   g+=`<rect x="${x(wa)}" y="${T}" width="${x(wb)-x(wa)}" height="${H-T-B}" fill="${css('--a3')}" opacity=".10"/><text x="${(x(wa)+x(wb))/2}" y="${H-B-6}" font-size="11" text-anchor="middle" fill="${mut}">⟪頂部窗口|Top window⟫</text>`;
   const now=Date.parse(SCN.dates[0]),snapT=fd[0];
   if(P!==SCN)g+=`<line x1="${x(snapT)}" x2="${x(snapT)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" stroke-dasharray="1 3" opacity=".25"/>`;
-  g+=`<line x1="${x(now)}" x2="${x(now)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" stroke-dasharray="2 4" opacity=".4"/><text x="${x(now)+4}" y="${H-B-6}" font-size="11" fill="${mut}">⟪今天|Today⟫</text>`;
+  g+=`<line x1="${x(now)}" x2="${x(now)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" stroke-dasharray="2 4" opacity=".4"/><text x="${x(now)+4}" y="${W<600?T+12:H-B-6}" font-size="11" fill="${mut}">⟪今天|Today⟫</text>`;  /* 窄螢幕「今天」放上方，避開底部的「頂部窗口」 */
   g+=`<path d="${hist.map((v,i)=>(i?'L':'M')+x(v[0]).toFixed(1)+','+y(v[1]).toFixed(1)).join('')}" fill="none" stroke="${css('--fg')}" stroke-width="1.6" stroke-linejoin="round"/>`;
   if((SCN.pull||[]).length){const ds=SCN.pull,sh=Math.max(...ds),dp=Math.min(...ds),bp=P.paths.base,ok=fd.map((t,i)=>t>=now);
     const pts=fd.map((t,i)=>[t,bp[i]]).filter((_,i)=>ok[i]),up=pts.map(v=>v[1]*(1+sh)),dn=pts.map(v=>v[1]*(1+dp));
     if(pts.length>1){g+=`<path d="${pts.map((v,i)=>(i?'L':'M')+x(v[0]).toFixed(1)+','+y(up[i]).toFixed(1)).join('')}${pts.slice().reverse().map((v,i)=>'L'+x(v[0]).toFixed(1)+','+y(dn[pts.length-1-i]).toFixed(1)).join('')}Z" fill="${css('--strat')}" opacity=".09"/>`;
       [up,dn].forEach(a=>{g+=`<path d="${pts.map((v,i)=>(i?'L':'M')+x(v[0]).toFixed(1)+','+y(a[i]).toFixed(1)).join('')}" fill="none" stroke="${css('--strat')}" stroke-width="1" stroke-dasharray="1 4" opacity=".55"/>`;});
-      const lx=x(pts[Math.floor(pts.length*.55)][0]);g+=`<text x="${lx}" y="${y(dn[Math.floor(pts.length*.55)])+14}" font-size="10.5" text-anchor="middle" fill="${mut}">⟪中間路徑途中可能的回調 |Possible pullbacks on the base path ⟫${Math.round(sh*100)}% ～ ${Math.round(dp*100)}%</text>`;}}
+      /* 窄螢幕用短句，文字中心限制在圖內，不被右邊切掉 */
+      const pl=(W<600?'⟪途中回調 |Pullbacks ⟫':'⟪中間路徑途中可能的回調 |Possible pullbacks on the base path ⟫')+`${Math.round(sh*100)}% ～ ${Math.round(dp*100)}%`,pw=pl.length*(W<600?6.4:5.8);
+      const pi=Math.floor(pts.length*.55),lx=Math.max(L+pw/2,Math.min(x(pts[pi][0]),W-R-pw/2));g+=`<text x="${lx}" y="${y(dn[pi])+14}" font-size="10.5" text-anchor="middle" fill="${mut}">${pl}</text>`;}}
   K.forEach(([k,c,n])=>{const a=P.paths[k],e=cur[k][cur[k].length-1];g+=`<path d="${a.map((v,i)=>(i?'L':'M')+x(fd[i]).toFixed(1)+','+y(v).toFixed(1)).join('')}" fill="none" stroke="${css(c)}" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round"/>`;
     g+=`<circle cx="${x(curT)}" cy="${y(e)}" r="4.5" fill="${css(c)}" stroke="${css('--bg')}" stroke-width="1.5"/><text x="${x(curT)+8}" y="${y(e)+4}" font-size="11.5" font-weight="600" fill="${css(c)}">${n} $${Math.round(e/1e3)}k</text>`;});
   const h=st.fut.hover;let tip;

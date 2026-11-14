@@ -3,6 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="canonical" href="https://tidemark.aronlab.dev/case-study/">
+<link rel="alternate" hreflang="zh-Hant" href="https://tidemark.aronlab.dev/case-study/?lang=zh">
+<link rel="alternate" hreflang="en" href="https://tidemark.aronlab.dev/case-study/en/">
+<link rel="alternate" hreflang="x-default" href="https://tidemark.aronlab.dev/case-study/">
+<script>
+  // 2026-11-15 中英雙語：英文版在 en/。語言跟 Aron Lab 同一套：網址的 ?lang= → 自己選過的（localStorage 的 lang，與 Tidemark 主站共用，zh／hans 都算中文）
+  //   → IP 地區（Cloudflare Pages Function functions/case-study/index.js 寫進 <html data-geo>：台灣、香港、澳門、中國用中文，其他用英文）→ 瀏覽器語言。
+  (function () {
+    var h = document.documentElement, q = new URLSearchParams(location.search).get('lang'), s = null;
+    try { s = localStorage.getItem('lang'); } catch (e) {}
+    s = s === 'hans' ? 'zh' : s;
+    var g = h.dataset.geo, geo = /^[A-Z]{2}$/.test(g || '') ? (/^(TW|HK|MO|CN)$/.test(g) ? 'zh' : 'en') : null;
+    var l = q === 'en' || q === 'zh' ? q : s === 'en' || s === 'zh' ? s : geo || ([].concat(navigator.languages || navigator.language || []).some(function (x) { return /^zh/i.test(x); }) ? 'zh' : 'en');
+    if (l === 'en') location.replace('/case-study/en/' + location.hash);
+  })();
+</script>
 <meta name="description" content="Tidemark 比特幣週期訊號產品的 PM 作品集案例：產品定義、決策與取捨、假設驗證、迭代、週期策略、介面、營運與架構。">
 <meta property="og:type" content="article"><meta property="og:title" content="Tidemark 作品集｜產品經理 0→1 數據產品">
 <meta property="og:description" content="從問題定義、假設驗證到上線營運，獨立完成一個每天自動更新的比特幣週期數據產品。">
@@ -45,6 +61,7 @@ header.hero{padding-block:clamp(48px,9vw,110px) 40px;display:grid;gap:22px;posit
 header.hero::before{content:"";position:absolute;inset:-40px calc(50% - 50vw) auto;height:520px;z-index:-1;pointer-events:none;
   background:radial-gradient(40% 70% at 15% 20%,color-mix(in srgb,var(--bot) 26%,transparent),transparent 70%),
              radial-gradient(40% 70% at 70% 0%,color-mix(in srgb,var(--top2) 22%,transparent),transparent 70%);filter:blur(10px)}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:12px;font:800 20px var(--disp)}
 .brand svg{width:40px;height:40px;border-radius:11px}
 header h1{font-size:clamp(44px,8vw,96px);font-weight:900;letter-spacing:-.04em;line-height:1.02}
@@ -58,6 +75,13 @@ header h1 em{font-style:normal;background:linear-gradient(90deg,var(--bot),var(-
 .links{display:flex;flex-wrap:wrap;gap:10px}
 .links a{font:600 13px var(--mono);text-decoration:none;color:var(--fg);padding:9px 16px;border-radius:999px;border:1px solid var(--line2)}
 .links a:hover,.links a:focus-visible{border-color:var(--bot);outline:none}
+
+/* 語言切換：中／EN 一對膠囊，現在的那個墨色底（與 Aron Lab 的產品案例同一種） */
+.langseg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line2);border-radius:99px;background:var(--surface)}
+.langseg a{padding:5px 11px;border-radius:99px;font:600 12px/1 var(--mono);letter-spacing:.06em;color:var(--mut);text-decoration:none}
+.langseg a[aria-current="true"]{background:var(--fg);color:var(--bg)}
+.langseg a:focus-visible{outline:2px solid var(--bot);outline-offset:2px}
+html.leaving .wrap{opacity:0;transform:translateY(6px)}
 
 /* 目錄 */
 nav.toc{display:flex;flex-wrap:wrap;gap:6px 18px;padding-block:18px;border-bottom:1px solid var(--line);font-size:14px}
@@ -83,6 +107,8 @@ section h3{font-size:20px;font-weight:800;letter-spacing:-.01em}
 .figs div+div{padding-left:16px;border-left:1px solid var(--line)}
 .figs b{font:900 clamp(34px,4vw,48px)/1 var(--disp);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .figs span{font-size:13px;color:var(--mut)}
+/* 手機兩欄時，換到新一行的第一格不要左邊的分隔線和縮排 */
+@media (max-width:560px){.meta div:nth-child(odd),.figs div:nth-child(odd){padding-left:0;border-left:0}}
 
 /* 公式 */
 .formula{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
@@ -152,7 +178,7 @@ ol.num{margin:0;padding-left:22px;display:grid;gap:8px;max-width:68ch}
 ol.num b{font-weight:700}
 footer{margin-top:80px;padding-top:28px;border-top:1px solid var(--line);display:grid;gap:8px;color:var(--mut);font-size:14px}
 :focus-visible{outline:2px solid var(--bot);outline-offset:3px}
-@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.wrap{transition:opacity .22s ease,transform .22s ease}.langseg a{transition:background .25s,color .25s}}
 </style>
 </head>
 <body>
@@ -160,7 +186,10 @@ footer{margin-top:80px;padding-top:28px;border-top:1px solid var(--line);display
 <div class="wrap">
 
 <header class="hero">
-  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#20e3b2"/><stop offset="1" stop-color="#2aa8ff"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#lg)"/><path d="M6 18.5c2.6 0 2.6-7 5.2-7s2.6 7 5.2 7 2.6-7 5.2-7 2.6 7 4.4 7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11.2" cy="11.5" r="1.6" fill="#fff"/></svg>Tidemark</div>
+  <div class="toprow">
+    <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#20e3b2"/><stop offset="1" stop-color="#2aa8ff"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#lg)"/><path d="M6 18.5c2.6 0 2.6-7 5.2-7s2.6 7 5.2 7 2.6-7 5.2-7 2.6 7 4.4 7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11.2" cy="11.5" r="1.6" fill="#fff"/></svg>Tidemark</div>
+    <div class="langseg" role="group" aria-label="語言 Language"><a href="/case-study/?lang=zh" data-lang-set="zh" lang="zh-Hant" hreflang="zh-Hant" aria-current="true">中</a><a href="/case-study/en/?lang=en" data-lang-set="en" lang="en" hreflang="en">EN</a></div>
+  </div>
   <div class="lbl">作品集 · 產品經理 · 0→1 數據產品</div>
   <h1>讀懂比特幣的<em>潮汐</em></h1>
   <p class="lede">從問題定義、假設驗證到上線營運，獨立完成一個每天自動更新的數據產品：把 17 項公開指標與減半週期，濃縮成「頂部訊號」與「底部訊號」兩個可行動的數字，並附上經逐輪回測的週期策略。</p>
@@ -446,6 +475,26 @@ flowchart TB
 <script>
 const dark=!matchMedia('(prefers-color-scheme: light)').matches;
 mermaid.initialize({startOnLoad:true,theme:dark?'dark':'default',themeVariables:{fontFamily:'Noto Sans TC'}});
+
+(() => {   // 語言切換：記住選擇（與 Tidemark 主站共用 localStorage 的 lang），淡出後換到另一個語言的同一個章節
+  const secs = [...document.querySelectorAll("section[id]")];
+  document.querySelectorAll("[data-lang-set]").forEach(a => a.addEventListener("click", e => {
+    e.preventDefault();
+    if (a.getAttribute("aria-current") === "true") return;
+    try {   // 中文：原本選的是簡體就保留簡體（主站用），否則記成繁體
+      const s = localStorage.getItem("lang"), v = a.dataset.langSet;
+      localStorage.setItem("lang", v === "zh" && s === "hans" ? "hans" : v);
+    } catch (err) { /* 無痕模式：靠網址的 ?lang= */ }
+    const y = scrollY + innerHeight * 0.3;
+    let id = "";
+    secs.forEach(s => { if (s.offsetTop <= y) id = s.id; });
+    const url = a.getAttribute("href") + (id ? "#" + id : "");
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { location.href = url; return; }
+    document.documentElement.classList.add("leaving");
+    setTimeout(() => { location.href = url; }, 200);
+  }));
+  addEventListener("pageshow", () => document.documentElement.classList.remove("leaving"));
+})();
 </script>
 </body>
 </html>

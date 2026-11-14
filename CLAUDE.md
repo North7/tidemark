@@ -201,6 +201,10 @@ MVRV Z-score、NUPL、Puell Multiple、Realized Price 倍數（價格 / 實現�
 ## 作品集頁（2026-10 加入）
 `docs/case-study/`（tidemark.aronlab.dev/case-study/）是使用者的 PM 作品集案例頁，靜態檔案、不由 run.py 產生。
 **Tidemark 網站與 README 都不放它的連結**（使用者要求）；修改時直接編輯該資料夾。
+- 中英雙語（2026-11-15，Aron Lab 轉達使用者要求）：英文版 `docs/case-study/en/`（英文截圖在 `en/img/`，主視覺與設計提案沿用 `../img/`），兩版有 hreflang 與「中／EN」切換鈕，章節錨點相同。
+  預設語言跟 Aron Lab 同一套：`?lang=` → 自己選過的（localStorage 的 `lang`，與主站共用，zh／hans 都算中文）→ IP 地區（台港澳中用中文）→ 瀏覽器語言；
+  英文版只看 `?lang=` 和自己選過的，不依 IP 轉回中文。IP 由 Cloudflare Pages Function `functions/case-study/index.js` 寫進 `<html data-geo>`（部署時 wrangler 從倉庫根目錄讀 `functions/`）。
+  改一版的內容時，另一版要一起改；對外署名只寫「Aron」。
 
 ## 部署步驟（由 Claude Code 執行）
 1. 確認 git 與 GitHub CLI（gh）已安裝，沒有就引導安裝
